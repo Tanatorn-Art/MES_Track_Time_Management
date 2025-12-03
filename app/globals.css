@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Dark theme scrollbar */
+.dark-scrollbar::-webkit-scrollbar,
+.dark-scrollbar *::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+.dark-scrollbar::-webkit-scrollbar-track,
+.dark-scrollbar *::-webkit-scrollbar-track {
+  background: #1f2937 !important;
+  border-radius: 4px;
+}
+
+.dark-scrollbar::-webkit-scrollbar-thumb,
+.dark-scrollbar *::-webkit-scrollbar-thumb {
+  background: #4b5563 !important;
+  border-radius: 4px;
+}
+
+.dark-scrollbar::-webkit-scrollbar-thumb:hover,
+.dark-scrollbar *::-webkit-scrollbar-thumb:hover {
+  background: #6b7280 !important;
+}
+
+.dark-scrollbar::-webkit-scrollbar-corner,
+.dark-scrollbar *::-webkit-scrollbar-corner {
+  background: #1f2937 !important;
+}
+
+/* Firefox scrollbar */
+.dark-scrollbar,
+.dark-scrollbar * {
+  scrollbar-width: thin;
+  scrollbar-color: #4b5563 #1f2937;
+}
