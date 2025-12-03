@@ -80,6 +80,8 @@ interface BottomPanelProps {
   apiData: ApiData;
   onApiUrlChange: (url: string) => void;
   onApiFetch: () => void;
+  refreshInterval: number;
+  onRefreshIntervalChange: (interval: number) => void;
   // Component
   onAddComponent?: (component: ComponentConfig) => void;
   onComponentUpdate?: (component: ComponentConfig) => void;
@@ -110,6 +112,8 @@ export default function BottomPanel({
   apiData,
   onApiUrlChange,
   onApiFetch,
+  refreshInterval,
+  onRefreshIntervalChange,
   onAddComponent,
   onComponentUpdate,
 }: BottomPanelProps) {
@@ -141,6 +145,7 @@ export default function BottomPanel({
   const [expandedSyncFields, setExpandedSyncFields] = useState<Set<string>>(new Set()); // Expanded fields in Sync tab
   const [selectedArrayField, setSelectedArrayField] = useState<string | null>(null); // Selected array field for index
   const [componentDataIndex, setComponentDataIndex] = useState<number>(0); // Selected index for array data
+  const [selectedIndexField, setSelectedIndexField] = useState<string | null>(null); // Selected field to use as index key
 
   // Toggle expanded state for Sync field (left panel in Sync tab)
   const toggleSyncFieldExpanded = (field: string) => {
@@ -153,6 +158,30 @@ export default function BottomPanel({
       }
       return next;
     });
+  };
+
+  // Check if API data is a root-level array (e.g., [{...}, {...}])
+  const isRootArray = (): boolean => {
+    return Array.isArray(apiData.data) && apiData.data.length > 0;
+  };
+
+  // Get root array length (when data itself is an array)
+  const getRootArrayLength = (): number => {
+    if (!Array.isArray(apiData.data)) return 0;
+    return apiData.data.length;
+  };
+
+  // Get fields from root array items
+  const getRootArrayFields = (): string[] => {
+    if (!Array.isArray(apiData.data) || apiData.data.length === 0) return [];
+    const firstItem = apiData.data[0] as Record<string, unknown>;
+    return Object.keys(firstItem);
+  };
+
+  // Get value from root array at specific index
+  const getRootArrayValue = (fieldName: string, index: number): unknown => {
+    if (!Array.isArray(apiData.data) || !apiData.data[index]) return undefined;
+    return (apiData.data[index] as Record<string, unknown>)[fieldName];
   };
 
   // Check if a field is an array of objects
@@ -170,6 +199,10 @@ export default function BottomPanel({
   // Get array field length
   const getArrayFieldLength = (fieldName: string): number => {
     if (!apiData.data) return 0;
+    // For root array, return the root array length
+    if (fieldName === '__ROOT_ARRAY__') {
+      return getRootArrayLength();
+    }
     const rootData = Array.isArray(apiData.data)
       ? (apiData.data[0] as Record<string, unknown>)
       : (apiData.data as Record<string, unknown>);
@@ -178,9 +211,16 @@ export default function BottomPanel({
     return Array.isArray(fieldValue) ? fieldValue.length : 0;
   };
 
-  // Get all array fields from API data
+  // Get all array fields from API data (including root array option)
   const getArrayFields = (): string[] => {
-    return apiData.headers.filter(h => !h.includes('.') && isArrayOfObjects(h));
+    const fields: string[] = [];
+    // If data itself is an array, add root array option
+    if (isRootArray()) {
+      fields.push('__ROOT_ARRAY__');
+    }
+    // Also check for nested array fields
+    fields.push(...apiData.headers.filter(h => !h.includes('.') && isArrayOfObjects(h)));
+    return fields;
   };
 
   // Cache root data to avoid repeated lookups
@@ -194,13 +234,19 @@ export default function BottomPanel({
 
   // Get value from array field at specific index (for Settings panel preview)
   const getArrayFieldValue = useCallback((fieldName: string, subField: string, index: number): unknown => {
+    // Handle root array case
+    if (fieldName === '__ROOT_ARRAY__') {
+      if (!Array.isArray(apiData.data) || !apiData.data[index]) return undefined;
+      return (apiData.data[index] as Record<string, unknown>)[subField];
+    }
+
     if (!rootData) return undefined;
     const fieldValue = rootData[fieldName];
     if (Array.isArray(fieldValue) && fieldValue[index]) {
       return (fieldValue[index] as Record<string, unknown>)[subField];
     }
     return undefined;
-  }, [rootData]);
+  }, [rootData, apiData.data]);
 
   // Toggle expanded state for field menu (left panel)
   const toggleFieldMenuExpanded = (field: string) => {
@@ -218,6 +264,12 @@ export default function BottomPanel({
   // Get sub-fields from a field that contains array of objects
   const getSubFieldsFromArrayField = (fieldName: string): string[] => {
     if (!apiData.data) return [];
+
+    // Handle root array case
+    if (fieldName === '__ROOT_ARRAY__') {
+      return getRootArrayFields();
+    }
+
     // Handle case where data is an array (use first item)
     const rootData = Array.isArray(apiData.data)
       ? (apiData.data[0] as Record<string, unknown>)
@@ -377,14 +429,25 @@ export default function BottomPanel({
 
   // Add all fields at once
   const addAllFieldsToComponent = () => {
-    const fields = apiData.headers.filter(h => !h.includes('.'));
+    // If root array is selected, use root array fields
+    let fields: string[];
+    if (selectedArrayField === '__ROOT_ARRAY__') {
+      fields = getRootArrayFields();
+    } else if (selectedArrayField) {
+      // Use fields from selected array
+      fields = getSubFieldsFromArrayField(selectedArrayField).map(f => `${selectedArrayField}.${f}`);
+    } else {
+      // Default: use top-level headers
+      fields = apiData.headers.filter(h => !h.includes('.'));
+    }
+
     const newBlocks: Block[] = fields.map((field, idx) => ({
       id: `comp-block-${Date.now()}-${idx}-${Math.random().toString(36).substr(2, 9)}`,
       type: 'text' as BlockType,
       position: { x: 10 + (idx % 4) * 100, y: 10 + Math.floor(idx / 4) * 28 },
       size: { width: 90, height: 22 },
       variableKey: field,
-      label: field,
+      label: field.includes('.') ? field.split('.').pop() || field : field,
       style: {
         backgroundColor: 'transparent',
         textColor: '#60a5fa',
@@ -516,6 +579,7 @@ export default function BottomPanel({
       blocks: componentBlocks,
       arrayField: selectedArrayField || undefined,
       dataIndex: componentDataIndex,
+      indexField: selectedIndexField || undefined,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -561,6 +625,9 @@ export default function BottomPanel({
             description: c.config?.description || '',
             size: c.config?.size || { width: 400, height: 300 },
             blocks: c.config?.blocks || [],
+            arrayField: c.config?.arrayField,
+            dataIndex: c.config?.dataIndex,
+            indexField: c.config?.indexField,
             createdAt: c.config?.createdAt || Date.now(),
             updatedAt: c.config?.updatedAt || Date.now(),
           })));
@@ -576,11 +643,15 @@ export default function BottomPanel({
     setEditingComponentId(component.id);
     setComponentName(component.name);
     setComponentSize(component.size);
-    // Clone blocks with new IDs to avoid conflicts
+    // Keep original block IDs to maintain mapping with main canvas blocks
     setComponentBlocks(component.blocks.map(b => ({
       ...b,
-      id: `comp-block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      // Keep original ID for proper update mapping
     })));
+    // Load array field and index settings
+    setSelectedArrayField(component.arrayField || null);
+    setComponentDataIndex(component.dataIndex || 0);
+    setSelectedIndexField(component.indexField || null);
     setSelectedComponentBlockId(null);
     setShowEditComponentModal(false);
   };
@@ -591,6 +662,9 @@ export default function BottomPanel({
     setComponentName('New Component');
     setComponentBlocks([]);
     setComponentSize({ width: 400, height: 300 });
+    setSelectedArrayField(null);
+    setComponentDataIndex(0);
+    setSelectedIndexField(null);
     setSelectedComponentBlockId(null);
   };
 
@@ -792,7 +866,7 @@ export default function BottomPanel({
         {/* API Tab */}
         {activeTab === 'api' && (
           <div className="flex flex-col gap-2 p-2 h-full">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs text-gray-400">URL:</span>
               <input
                 type="text"
@@ -810,6 +884,24 @@ export default function BottomPanel({
                 {apiData.loading ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
                 GET
               </button>
+
+              {/* Refresh Interval */}
+              <div className="flex items-center gap-1 border-l border-gray-700 pl-2">
+                <RefreshCw size={12} className="text-gray-400" />
+                <input
+                  type="number"
+                  value={refreshInterval}
+                  onChange={(e) => onRefreshIntervalChange(parseInt(e.target.value) || 0)}
+                  min="0"
+                  className="w-16 px-2 py-1 bg-gray-800 border border-gray-700 rounded text-xs text-white"
+                  title="Auto-refresh interval in seconds (0 = disabled)"
+                />
+                <span className="text-xs text-gray-500">sec</span>
+                {refreshInterval > 0 && (
+                  <span className="text-xs text-green-400"> Live</span>
+                )}
+              </div>
+
               {apiData.data && (
                 <button
                   onClick={() => { setShowApiData(!showApiData); setModalTab('byField'); }}
@@ -1067,17 +1159,25 @@ export default function BottomPanel({
                       </button>
                     </div>
                     <div className="p-1 space-y-0.5">
-                      {/* Show sub-fields of selected array field first */}
+                      {/* Show sub-fields of selected array field first (including root array) */}
                       {selectedArrayField && (
                         <div className="mb-2 pb-2 border-b border-gray-700">
                           <div className="px-2 py-1 text-[10px] text-yellow-400 font-medium flex items-center gap-1">
-                            <Package size={10} /> {selectedArrayField}[{componentDataIndex}]
+                            <Package size={10} />
+                            {selectedArrayField === '__ROOT_ARRAY__'
+                              ? `Root Array[${componentDataIndex}]`
+                              : `${selectedArrayField}[${componentDataIndex}]`}
+                            {selectedIndexField && (
+                              <span className="text-green-400 text-[9px]">
+                                (key: {selectedIndexField})
+                              </span>
+                            )}
                           </div>
                           <div className="ml-2 border-l border-yellow-600/50 pl-1 space-y-0.5">
                             {getSubFieldsFromArrayField(selectedArrayField).map((subField, subIdx) => (
                               <div
                                 key={subIdx}
-                                onClick={() => addFieldToComponent(`${selectedArrayField}.${subField}`)}
+                                onClick={() => addFieldToComponent(selectedArrayField === '__ROOT_ARRAY__' ? subField : `${selectedArrayField}.${subField}`)}
                                 className="flex items-center justify-between px-2 py-1 rounded text-[11px] font-mono text-green-400 hover:bg-gray-700 cursor-pointer group"
                               >
                                 <span className="truncate">{subField}</span>
@@ -1088,8 +1188,26 @@ export default function BottomPanel({
                         </div>
                       )}
 
-                      {/* Other fields */}
-                      {apiData.headers.filter(h => !h.includes('.')).map((header, idx) => {
+                      {/* Root Array Option - show when data is root array */}
+                      {isRootArray() && selectedArrayField !== '__ROOT_ARRAY__' && (
+                        <div
+                          onClick={() => {
+                            setSelectedArrayField('__ROOT_ARRAY__');
+                            setComponentDataIndex(0);
+                            setSelectedIndexField(null);
+                          }}
+                          className="flex items-center justify-between px-2 py-1.5 rounded text-xs font-mono bg-blue-900/30 text-blue-400 hover:bg-blue-800/50 cursor-pointer mb-2"
+                        >
+                          <div className="flex items-center gap-1">
+                            <Package size={12} />
+                            <span>📦 Root Array</span>
+                            <span className="text-[9px] text-gray-500">({getRootArrayLength()} items)</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Other fields - hide if root array is selected */}
+                      {selectedArrayField !== '__ROOT_ARRAY__' && apiData.headers.filter(h => !h.includes('.')).map((header, idx) => {
                         const hasSubFields = isArrayOfObjects(header);
                         const subFields = hasSubFields ? getSubFieldsFromArrayField(header) : [];
                         const isExpanded = expandedSyncFields.has(header);
@@ -1389,20 +1507,47 @@ export default function BottomPanel({
                             onChange={(e) => {
                               setSelectedArrayField(e.target.value || null);
                               setComponentDataIndex(0);
+                              setSelectedIndexField(null);
                             }}
                             className="w-full px-1 py-0.5 bg-gray-700 border border-gray-600 rounded text-white text-[11px]"
                             title="Select array field for data index"
                           >
                             <option value="">-- Select --</option>
                             {getArrayFields().map((field) => (
-                              <option key={field} value={field}>{field} ({getArrayFieldLength(field)} items)</option>
+                              <option key={field} value={field}>
+                                {field === '__ROOT_ARRAY__' ? '📦 Root Array' : field} ({getArrayFieldLength(field)} items)
+                              </option>
                             ))}
                           </select>
                         </div>
+                        {/* Index Field Selector - เลือก field ที่จะใช้เป็น index key */}
+                        {selectedArrayField && (
+                          <div className="mb-1">
+                            <label className="text-[10px] text-gray-500">Index Field (ใช้ field นี้เป็น key)</label>
+                            <select
+                              value={selectedIndexField || ''}
+                              onChange={(e) => setSelectedIndexField(e.target.value || null)}
+                              className="w-full px-1 py-0.5 bg-gray-700 border border-gray-600 rounded text-white text-[11px]"
+                              title="Select field to use as index key"
+                            >
+                              <option value="">-- ใช้ตำแหน่ง index ปกติ --</option>
+                              {getSubFieldsFromArrayField(selectedArrayField).map((subField) => (
+                                <option key={subField} value={subField}>{subField}</option>
+                              ))}
+                            </select>
+                            {selectedIndexField && (
+                              <div className="mt-1 text-[9px] text-green-400">
+                                ✓ จะใช้ค่าของ &quot;{selectedIndexField}&quot; เป็น key ในการจับคู่ข้อมูล
+                              </div>
+                            )}
+                          </div>
+                        )}
                         {/* Index Selector */}
                         {selectedArrayField && (
                           <div>
-                            <label className="text-[10px] text-gray-500">Index</label>
+                            <label className="text-[10px] text-gray-500">
+                              {selectedIndexField ? `Preview (${selectedIndexField})` : 'Index'}
+                            </label>
                             <select
                               value={componentDataIndex}
                               onChange={(e) => setComponentDataIndex(Number(e.target.value))}
@@ -1412,11 +1557,12 @@ export default function BottomPanel({
                               {Array.from({ length: getArrayFieldLength(selectedArrayField) }, (_, i) => (
                                 <option key={i} value={i}>
                                   [{i}] {(() => {
-                                    // Show first field value as preview
+                                    // Show index field value or first field value as preview
                                     const subFields = getSubFieldsFromArrayField(selectedArrayField);
-                                    if (subFields.length > 0) {
-                                      const preview = getArrayFieldValue(selectedArrayField, subFields[0], i);
-                                      return preview ? String(preview).substring(0, 20) : '';
+                                    const previewField = selectedIndexField || (subFields.length > 0 ? subFields[0] : null);
+                                    if (previewField) {
+                                      const preview = getArrayFieldValue(selectedArrayField, previewField, i);
+                                      return preview ? String(preview).substring(0, 30) : '';
                                     }
                                     return '';
                                   })()}

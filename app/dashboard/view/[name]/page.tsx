@@ -19,11 +19,19 @@ function extractKeys(obj: Record<string, unknown>, prefix = ''): string[] {
   return keys;
 }
 
-// Helper to get value by path (supports bracket notation)
+// Helper to get value by path (supports bracket notation like [0].field)
 function getValueByPath(obj: Record<string, unknown>, path: string): unknown {
   if (!path || !obj) return undefined;
 
-  const keys = path.replace(/\[(\d+)\]/g, '.$1').split('.');
+  // Convert bracket notation to dot notation and handle leading bracket
+  let normalizedPath = path.replace(/\[(\d+)\]/g, '.$1');
+
+  // Remove leading dot if path starts with bracket notation (e.g., "[0].station" becomes ".0.station")
+  if (normalizedPath.startsWith('.')) {
+    normalizedPath = normalizedPath.substring(1);
+  }
+
+  const keys = normalizedPath.split('.').filter(k => k !== '');
   let current: unknown = obj;
 
   for (const key of keys) {
@@ -43,21 +51,33 @@ function getBoundValue(block: Block, apiData: unknown): string | undefined {
   let value: unknown = undefined;
   const varKey = block.variableKey;
 
-  // Case 1: variableKey is like "data[0].htcCode" - explicit array index
-  const arrayMatch = varKey.match(/^(\w+)\[(\d+)\]\.(.+)$/);
-  if (arrayMatch) {
-    const [, fieldName, indexStr, subPath] = arrayMatch;
+  // Case 0: variableKey is like "[0].station" - root array with explicit index
+  const rootArrayMatch = varKey.match(/^\[(\d+)\]\.(.+)$/);
+  if (rootArrayMatch && Array.isArray(apiData)) {
+    const [, indexStr, fieldPath] = rootArrayMatch;
     const index = parseInt(indexStr, 10);
-
-    // Check if apiData is the array itself
-    if (Array.isArray(apiData) && apiData[index]) {
-      value = getValueByPath(apiData[index] as Record<string, unknown>, subPath);
+    if (apiData[index]) {
+      value = getValueByPath(apiData[index] as Record<string, unknown>, fieldPath);
     }
-    // Check if apiData has this field as array property
-    if (value === undefined || value === null) {
-      const fieldData = (apiData as Record<string, unknown>)[fieldName];
-      if (Array.isArray(fieldData) && fieldData[index]) {
-        value = getValueByPath(fieldData[index] as Record<string, unknown>, subPath);
+  }
+
+  // Case 1: variableKey is like "data[0].htcCode" - explicit array index
+  if (value === undefined || value === null) {
+    const arrayMatch = varKey.match(/^(\w+)\[(\d+)\]\.(.+)$/);
+    if (arrayMatch) {
+      const [, fieldName, indexStr, subPath] = arrayMatch;
+      const index = parseInt(indexStr, 10);
+
+      // Check if apiData is the array itself
+      if (Array.isArray(apiData) && apiData[index]) {
+        value = getValueByPath(apiData[index] as Record<string, unknown>, subPath);
+      }
+      // Check if apiData has this field as array property
+      if (value === undefined || value === null) {
+        const fieldData = (apiData as Record<string, unknown>)[fieldName];
+        if (Array.isArray(fieldData) && fieldData[index]) {
+          value = getValueByPath(fieldData[index] as Record<string, unknown>, subPath);
+        }
       }
     }
   }
@@ -96,9 +116,11 @@ export default function DashboardViewPage() {
   const [apiData, setApiData] = useState<ApiData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isFetchingRef = useRef(false); // Use ref instead of state for background fetch
 
   // Fetch dashboard config
   useEffect(() => {
@@ -126,9 +148,12 @@ export default function DashboardViewPage() {
     }
   }, [name]);
 
-  // Fetch API data
+  // Fetch API data (background fetch - no loading indicator)
   const fetchApiData = useCallback(async () => {
     if (!config?.apiConfig?.url) return;
+    if (isFetchingRef.current) return; // Prevent duplicate fetches
+
+    isFetchingRef.current = true;
 
     try {
       const proxyUrl = `/api/proxy?url=${encodeURIComponent(config.apiConfig.url)}`;
@@ -146,6 +171,7 @@ export default function DashboardViewPage() {
         headers = extractKeys(data as Record<string, unknown>);
       }
 
+      // Update state - React will re-render with new data
       setApiData({
         url: config.apiConfig.url,
         data,
@@ -154,8 +180,11 @@ export default function DashboardViewPage() {
         error: null,
         lastFetched: Date.now(),
       });
+      setLastUpdate(new Date());
     } catch (err) {
       console.error('API fetch error:', err);
+    } finally {
+      isFetchingRef.current = false;
     }
   }, [config?.apiConfig?.url]);
 
@@ -211,14 +240,36 @@ export default function DashboardViewPage() {
       // Initial fetch
       fetchApiData();
 
-      // Set up interval if refreshInterval > 0
-      if (config.apiConfig.refreshInterval > 0) {
-        intervalRef.current = setInterval(fetchApiData, config.apiConfig.refreshInterval * 1000);
+      // Set up interval - use configured interval or default to 30 seconds
+      // Only poll if interval is set (> 0), otherwise just use initial fetch
+      const interval = config.apiConfig.refreshInterval;
+
+      if (interval > 0) {
+        // Setup polling with visibility detection to reduce server load
+        let isVisible = true;
+
+        const handleVisibilityChange = () => {
+          isVisible = !document.hidden;
+          // Fetch immediately when tab becomes visible again
+          if (isVisible && intervalRef.current) {
+            fetchApiData();
+          }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        intervalRef.current = setInterval(() => {
+          // Only fetch if tab is visible
+          if (isVisible) {
+            fetchApiData();
+          }
+        }, interval * 1000);
 
         return () => {
           if (intervalRef.current) {
             clearInterval(intervalRef.current);
           }
+          document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
       }
     }
@@ -273,13 +324,39 @@ export default function DashboardViewPage() {
     );
   }
 
+  // Get refresh interval for display
+  const refreshInterval = config?.apiConfig?.refreshInterval || 0;
+  const isAutoRefreshEnabled = refreshInterval > 0;
+
   return (
     <div
-      className="h-screen w-screen overflow-hidden flex items-center justify-center"
+      className="h-screen w-screen overflow-hidden flex items-center justify-center relative"
       style={{
         backgroundColor: '#111827',
       }}
     >
+      {/* Real-time indicator */}
+      <div className="absolute top-4 right-4 z-50 flex items-center gap-2 bg-gray-800/80 backdrop-blur-sm px-3 py-2 rounded-lg border border-gray-700">
+        {isAutoRefreshEnabled ? (
+          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+        ) : (
+          <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+        )}
+        <span className="text-xs text-gray-300">
+          {isAutoRefreshEnabled ? 'Live' : 'Static'}
+        </span>
+        {isAutoRefreshEnabled && (
+          <span className="text-xs text-gray-500">
+            ({refreshInterval}s)
+          </span>
+        )}
+        {lastUpdate && (
+          <span className="text-xs text-gray-500">
+            {lastUpdate.toLocaleTimeString()}
+          </span>
+        )}
+      </div>
+
       <div
         className="relative"
         style={{
@@ -294,8 +371,14 @@ export default function DashboardViewPage() {
       >
         {config.blocks.map((block) => {
           const boundValue = getBoundValue(block, apiData?.data);
-          // Show actual data, fallback to label/content only if no data
-          const displayValue = boundValue !== undefined ? boundValue : (block.label || block.content || '');
+          // Check if we're still loading API data
+          const isApiLoading = !apiData || apiData.loading;
+          // Show loading indicator for blocks with variableKey when API is loading
+          const showLoading = isApiLoading && block.variableKey;
+          // Show actual data, show loading if waiting for API, fallback to content for static blocks
+          const displayValue = showLoading
+            ? ''
+            : (boundValue !== undefined ? boundValue : (block.content || ''));
 
           return (
             <div
@@ -324,7 +407,13 @@ export default function DashboardViewPage() {
                 overflow: 'hidden',
               }}
             >
-              {displayValue}
+              {showLoading ? (
+                <div className="flex items-center gap-1 text-gray-500">
+                  <div className="w-3 h-3 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              ) : (
+                displayValue
+              )}
             </div>
           );
         })}

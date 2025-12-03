@@ -1,6 +1,6 @@
 {
-  "id": "component-1764750295271",
-  "name": "New Component",
+  "id": "component-1764750655967",
+  "name": "Station_2",
   "description": "",
   "size": {
     "width": 400,
@@ -8,22 +8,22 @@
   },
   "blocks": [
     {
-      "id": "comp-block-1764750105505-vgj4po7sh",
+      "id": "comp-block-1764750686121-wj20q5ys1",
       "type": "text",
       "position": {
         "x": 0,
-        "y": 10
+        "y": 0
       },
       "size": {
-        "width": 473,
-        "height": 68
+        "width": 468,
+        "height": 70
       },
       "variableKey": "stationName",
       "label": "stationName",
       "style": {
         "backgroundColor": "transparent",
         "textColor": "#ffffff",
-        "fontSize": 37,
+        "fontSize": 33,
         "fontWeight": "normal",
         "fontFamily": "Arial",
         "textAlign": "left",
@@ -34,15 +34,15 @@
       }
     },
     {
-      "id": "comp-block-1764750136016-2jxzncpfy",
+      "id": "comp-block-1764750686121-2ny5ru3hk",
       "type": "text",
       "position": {
         "x": 0,
-        "y": 42
+        "y": 41
       },
       "size": {
-        "width": 481,
-        "height": 102
+        "width": 470,
+        "height": 69
       },
       "variableKey": "count_DownTime_YES",
       "label": "count_DownTime_YES",
@@ -60,15 +60,15 @@
       }
     },
     {
-      "id": "comp-block-1764750179032-jbymusbik",
+      "id": "comp-block-1764750686121-agkpeex89",
       "type": "text",
       "position": {
         "x": 0,
-        "y": 81
+        "y": 83
       },
       "size": {
         "width": 480,
-        "height": 127
+        "height": 74
       },
       "variableKey": "count_DownTime_NO",
       "label": "count_DownTime_NO",
@@ -86,15 +86,15 @@
       }
     },
     {
-      "id": "comp-block-1764750276776-csqhpuwvp",
+      "id": "comp-block-1764750686121-00wm6yzxe",
       "type": "text",
       "position": {
         "x": 0,
-        "y": 150
+        "y": 125
       },
       "size": {
-        "width": 479,
-        "height": 87
+        "width": 477,
+        "height": 79
       },
       "variableKey": "suM_TimeDiff_Minutes",
       "label": "suM_TimeDiff_Minutes",
@@ -113,8 +113,8 @@
     }
   ],
   "arrayField": "__ROOT_ARRAY__",
-  "dataIndex": 11,
+  "dataIndex": 8,
   "indexField": "station",
-  "createdAt": 1764750295271,
-  "updatedAt": 1764750295271
+  "createdAt": 1764755379471,
+  "updatedAt": 1764755379471
 }

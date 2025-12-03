@@ -35,12 +35,19 @@ interface CanvasProps {
   showLiveData?: boolean; // Toggle to show real data or variable names
 }
 
-// Helper to get value from nested object by path (supports bracket notation like data[0].field)
+// Helper to get value from nested object by path (supports bracket notation like data[0].field or [0].field)
 function getValueByPath(obj: Record<string, unknown>, path: string): unknown {
   if (!path || !obj) return undefined;
 
-  // Convert bracket notation to dot notation: data[0].field -> data.0.field
-  const keys = path.replace(/\[(\d+)\]/g, '.$1').split('.');
+  // Convert bracket notation to dot notation: data[0].field -> data.0.field, [0].field -> 0.field
+  let normalizedPath = path.replace(/\[(\d+)\]/g, '.$1');
+
+  // Remove leading dot if path starts with bracket notation (e.g., "[0].station" becomes ".0.station")
+  if (normalizedPath.startsWith('.')) {
+    normalizedPath = normalizedPath.substring(1);
+  }
+
+  const keys = normalizedPath.split('.').filter(k => k !== '');
   let current: unknown = obj;
 
   for (const key of keys) {
@@ -258,21 +265,33 @@ export default function Canvas({
     let value: unknown = undefined;
     const varKey = block.variableKey;
 
-    // Case 1: variableKey is like "data[0].htcCode" - explicit array index
-    const arrayMatch = varKey.match(/^(\w+)\[(\d+)\]\.(.+)$/);
-    if (arrayMatch) {
-      const [, fieldName, indexStr, subPath] = arrayMatch;
+    // Case 0: variableKey is like "[0].station" - root array with explicit index
+    const rootArrayMatch = varKey.match(/^\[(\d+)\]\.(.+)$/);
+    if (rootArrayMatch && Array.isArray(apiData)) {
+      const [, indexStr, fieldPath] = rootArrayMatch;
       const index = parseInt(indexStr, 10);
-
-      // Check if apiData is the array itself
-      if (Array.isArray(apiData) && apiData[index]) {
-        value = getValueByPath(apiData[index] as Record<string, unknown>, subPath);
+      if (apiData[index]) {
+        value = getValueByPath(apiData[index] as Record<string, unknown>, fieldPath);
       }
-      // Check if apiData has this field as array property
-      if (value === undefined || value === null) {
-        const fieldData = (apiData as Record<string, unknown>)[fieldName];
-        if (Array.isArray(fieldData) && fieldData[index]) {
-          value = getValueByPath(fieldData[index] as Record<string, unknown>, subPath);
+    }
+
+    // Case 1: variableKey is like "data[0].htcCode" - explicit array index
+    if (value === undefined || value === null) {
+      const arrayMatch = varKey.match(/^(\w+)\[(\d+)\]\.(.+)$/);
+      if (arrayMatch) {
+        const [, fieldName, indexStr, subPath] = arrayMatch;
+        const index = parseInt(indexStr, 10);
+
+        // Check if apiData is the array itself
+        if (Array.isArray(apiData) && apiData[index]) {
+          value = getValueByPath(apiData[index] as Record<string, unknown>, subPath);
+        }
+        // Check if apiData has this field as array property
+        if (value === undefined || value === null) {
+          const fieldData = (apiData as Record<string, unknown>)[fieldName];
+          if (Array.isArray(fieldData) && fieldData[index]) {
+            value = getValueByPath(fieldData[index] as Record<string, unknown>, subPath);
+          }
         }
       }
     }

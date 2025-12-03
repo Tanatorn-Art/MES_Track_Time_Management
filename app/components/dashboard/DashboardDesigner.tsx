@@ -447,10 +447,17 @@ export default function DashboardDesigner() {
           (b) => b.id === firstInstanceBlock.sourceBlockId
         );
 
-        if (!firstOriginalBlock) return;
-
-        const offsetX = firstInstanceBlock.position.x - firstOriginalBlock.position.x;
-        const offsetY = firstInstanceBlock.position.y - firstOriginalBlock.position.y;
+        // Calculate offset - if original block not found, use first block from updated component
+        let offsetX = 0;
+        let offsetY = 0;
+        if (firstOriginalBlock) {
+          offsetX = firstInstanceBlock.position.x - firstOriginalBlock.position.x;
+          offsetY = firstInstanceBlock.position.y - firstOriginalBlock.position.y;
+        } else if (updatedComponent.blocks.length > 0) {
+          // Fallback: use first block's position as reference
+          offsetX = firstInstanceBlock.position.x - updatedComponent.blocks[0].position.x;
+          offsetY = firstInstanceBlock.position.y - updatedComponent.blocks[0].position.y;
+        }
 
         // Get array field info for variableKey transformation
         const arrayField = updatedComponent.arrayField;
@@ -466,10 +473,16 @@ export default function DashboardDesigner() {
         updatedComponent.blocks.forEach((srcBlock) => {
           let newVariableKey = srcBlock.variableKey;
 
-          // Transform variableKey if using arrayField
-          if (srcBlock.variableKey && arrayField && srcBlock.variableKey.startsWith(`${arrayField}.`)) {
-            const subField = srcBlock.variableKey.substring(arrayField.length + 1);
-            newVariableKey = `${arrayField}[${dataIndex}].${subField}`;
+          // Transform variableKey based on arrayField type
+          if (srcBlock.variableKey && arrayField) {
+            if (arrayField === '__ROOT_ARRAY__') {
+              // For root array, transform "station" to "[0].station"
+              newVariableKey = `[${dataIndex}].${srcBlock.variableKey}`;
+            } else if (srcBlock.variableKey.startsWith(`${arrayField}.`)) {
+              // For nested array, transform "data.htcCode" to "data[0].htcCode"
+              const subField = srcBlock.variableKey.substring(arrayField.length + 1);
+              newVariableKey = `${arrayField}[${dataIndex}].${subField}`;
+            }
           }
 
           newBlocks.push({
@@ -525,11 +538,16 @@ export default function DashboardDesigner() {
     const newBlocks: Block[] = component.blocks.map((block) => {
       let newVariableKey = block.variableKey;
 
-      // If the block has a variableKey and component has arrayField
-      if (block.variableKey && arrayField && block.variableKey.startsWith(`${arrayField}.`)) {
-        // Transform "data.htcCode" to "data[0].htcCode"
-        const subField = block.variableKey.substring(arrayField.length + 1);
-        newVariableKey = `${arrayField}[${dataIndex}].${subField}`;
+      // Transform variableKey based on arrayField type
+      if (block.variableKey && arrayField) {
+        if (arrayField === '__ROOT_ARRAY__') {
+          // For root array, transform "station" to "[0].station"
+          newVariableKey = `[${dataIndex}].${block.variableKey}`;
+        } else if (block.variableKey.startsWith(`${arrayField}.`)) {
+          // For nested array, transform "data.htcCode" to "data[0].htcCode"
+          const subField = block.variableKey.substring(arrayField.length + 1);
+          newVariableKey = `${arrayField}[${dataIndex}].${subField}`;
+        }
       }
 
       return {
@@ -809,7 +827,7 @@ export default function DashboardDesigner() {
               </div>
             ) : config.apiConfig.refreshInterval > 0 && config.apiConfig.url ? (
               <div className="px-2 py-1 rounded text-xs bg-blue-800 text-blue-200 flex items-center gap-1">
-                🔄 Polling {config.apiConfig.refreshInterval}s
+                Polling {config.apiConfig.refreshInterval}s
               </div>
             ) : null}
 
@@ -1407,6 +1425,11 @@ export default function DashboardDesigner() {
           apiData={apiData}
           onApiUrlChange={handleApiUrlChange}
           onApiFetch={handleApiFetch}
+          refreshInterval={config.apiConfig.refreshInterval}
+          onRefreshIntervalChange={(interval) => setConfig((prev) => ({
+            ...prev,
+            apiConfig: { ...prev.apiConfig, refreshInterval: interval }
+          }))}
           onAddComponent={handleAddComponent}
           onComponentUpdate={handleComponentUpdate}
         />

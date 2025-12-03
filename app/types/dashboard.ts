@@ -99,6 +99,7 @@ export interface ComponentConfig {
   blocks: Block[];
   arrayField?: string; // The array field used for data binding (e.g., "data")
   dataIndex?: number; // The index within the array field
+  indexField?: string; // The field to use as index key (e.g., "id", "name") for matching data
   createdAt: number;
   updatedAt: number;
 }

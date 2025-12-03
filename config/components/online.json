@@ -1,5 +1,5 @@
 {
-  "id": "component-1764746603356",
+  "id": "component-1764750295271",
   "name": "Online",
   "description": "",
   "size": {
@@ -8,22 +8,22 @@
   },
   "blocks": [
     {
-      "id": "comp-block-1764746846113-epdoceler",
+      "id": "comp-block-1764750105505-vgj4po7sh",
       "type": "text",
       "position": {
         "x": 0,
-        "y": 6
+        "y": 10
       },
       "size": {
-        "width": 438,
-        "height": 74
+        "width": 473,
+        "height": 68
       },
-      "variableKey": "data.id",
-      "label": "data.id",
+      "variableKey": "stationName",
+      "label": "stationName",
       "style": {
         "backgroundColor": "transparent",
-        "textColor": "#60a5fa",
-        "fontSize": 65,
+        "textColor": "#ffffff",
+        "fontSize": 37,
         "fontWeight": "normal",
         "fontFamily": "Arial",
         "textAlign": "left",
@@ -34,22 +34,74 @@
       }
     },
     {
-      "id": "comp-block-1764746846113-iawz61d40",
+      "id": "comp-block-1764750136016-2jxzncpfy",
       "type": "text",
       "position": {
         "x": 0,
-        "y": 94
+        "y": 42
       },
       "size": {
-        "width": 436,
-        "height": 91
+        "width": 481,
+        "height": 102
       },
-      "variableKey": "data.codePrivilege",
-      "label": "data.codePrivilege",
+      "variableKey": "count_DownTime_YES",
+      "label": "count_DownTime_YES",
       "style": {
         "backgroundColor": "transparent",
-        "textColor": "#60a5fa",
-        "fontSize": 32,
+        "textColor": "#ffffff",
+        "fontSize": 33,
+        "fontWeight": "normal",
+        "fontFamily": "Arial",
+        "textAlign": "left",
+        "borderRadius": 0,
+        "padding": 4,
+        "borderWidth": 0,
+        "borderColor": "transparent"
+      }
+    },
+    {
+      "id": "comp-block-1764750179032-jbymusbik",
+      "type": "text",
+      "position": {
+        "x": 0,
+        "y": 81
+      },
+      "size": {
+        "width": 480,
+        "height": 127
+      },
+      "variableKey": "count_DownTime_NO",
+      "label": "count_DownTime_NO",
+      "style": {
+        "backgroundColor": "transparent",
+        "textColor": "#ffffff",
+        "fontSize": 33,
+        "fontWeight": "normal",
+        "fontFamily": "Arial",
+        "textAlign": "left",
+        "borderRadius": 0,
+        "padding": 4,
+        "borderWidth": 0,
+        "borderColor": "transparent"
+      }
+    },
+    {
+      "id": "comp-block-1764750276776-csqhpuwvp",
+      "type": "text",
+      "position": {
+        "x": 0,
+        "y": 150
+      },
+      "size": {
+        "width": 479,
+        "height": 87
+      },
+      "variableKey": "suM_TimeDiff_Minutes",
+      "label": "suM_TimeDiff_Minutes",
+      "style": {
+        "backgroundColor": "transparent",
+        "textColor": "#ffffff",
+        "fontSize": 33,
         "fontWeight": "normal",
         "fontFamily": "Arial",
         "textAlign": "left",
@@ -60,8 +112,9 @@
       }
     }
   ],
-  "arrayField": "data",
-  "dataIndex": 2,
-  "createdAt": 1764746888618,
-  "updatedAt": 1764746888618
+  "arrayField": "__ROOT_ARRAY__",
+  "dataIndex": 10,
+  "indexField": "station",
+  "createdAt": 1764754414705,
+  "updatedAt": 1764754414705
 }
