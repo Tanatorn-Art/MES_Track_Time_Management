@@ -1,0 +1,66 @@
+{
+  "id": "component-1764737205858",
+  "name": "New Component",
+  "description": "",
+  "size": {
+    "width": 400,
+    "height": 322
+  },
+  "blocks": [
+    {
+      "id": "comp-block-1764742854988-0lg6btvp4",
+      "type": "text",
+      "position": {
+        "x": 0,
+        "y": 22
+      },
+      "size": {
+        "width": 420,
+        "height": 60
+      },
+      "variableKey": "data.id",
+      "label": "data.id",
+      "style": {
+        "backgroundColor": "transparent",
+        "textColor": "#ffffff",
+        "fontSize": 39,
+        "fontWeight": "normal",
+        "fontFamily": "Arial",
+        "textAlign": "left",
+        "borderRadius": 0,
+        "padding": 4,
+        "borderWidth": 0,
+        "borderColor": "transparent"
+      }
+    },
+    {
+      "id": "comp-block-1764742854989-raw8ns8z3",
+      "type": "text",
+      "position": {
+        "x": 0,
+        "y": 272
+      },
+      "size": {
+        "width": 430,
+        "height": 50
+      },
+      "variableKey": "data.codePrivilege",
+      "label": "data.codePrivilege",
+      "style": {
+        "backgroundColor": "transparent",
+        "textColor": "#edf2f7",
+        "fontSize": 14,
+        "fontWeight": "normal",
+        "fontFamily": "Arial",
+        "textAlign": "left",
+        "borderRadius": 0,
+        "padding": 4,
+        "borderWidth": 0,
+        "borderColor": "transparent"
+      }
+    }
+  ],
+  "dataIndex": 0,
+  "createdAt": 1764742894308,
+  "updatedAt": 1764742894308
+}

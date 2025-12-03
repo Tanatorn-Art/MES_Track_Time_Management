@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Block, BlockStyle, BlockType, BlockTemplate, ApiData } from '../../types/dashboard';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
+import { Block, BlockStyle, BlockType, BlockTemplate, ApiData, ComponentConfig } from '../../types/dashboard';
 import {
   Type,
   Hash,
@@ -26,7 +26,19 @@ import {
   Globe,
   Play,
   Loader2,
-  Link2
+  Link2,
+  Save,
+  FolderOpen,
+  RefreshCw,
+  Plus,
+  Move,
+  Maximize2,
+  Box,
+  Package,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Bold
 } from 'lucide-react';
 
 // Block Templates with Lucide icons
@@ -61,10 +73,16 @@ interface BottomPanelProps {
   onExport: () => void;
   onImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onReset: () => void;
+  onSaveProject: () => void;
+  onLoadProject: () => void;
+  isSaving?: boolean;
   // API
   apiData: ApiData;
   onApiUrlChange: (url: string) => void;
   onApiFetch: () => void;
+  // Component
+  onAddComponent?: (component: ComponentConfig) => void;
+  onComponentUpdate?: (component: ComponentConfig) => void;
 }
 
 type TabType = 'tools' | 'block' | 'bg' | 'settings' | 'api';
@@ -86,18 +104,103 @@ export default function BottomPanel({
   onExport,
   onImport,
   onReset,
+  onSaveProject,
+  onLoadProject,
+  isSaving,
   apiData,
   onApiUrlChange,
   onApiFetch,
+  onAddComponent,
+  onComponentUpdate,
 }: BottomPanelProps) {
   const [activeTab, setActiveTab] = useState<TabType>('tools');
   const [showApiData, setShowApiData] = useState(false);
-  const [modalTab, setModalTab] = useState<'data' | 'headers' | 'byField'>('data');
+  const [modalTab, setModalTab] = useState<'data' | 'headers' | 'byField' | 'sync'>('data');
   const [expandedHeaders, setExpandedHeaders] = useState<Set<string>>(new Set());
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const [selectedSubField, setSelectedSubField] = useState<string | null>(null);
   const [expandedFieldValues, setExpandedFieldValues] = useState<Set<string>>(new Set());
   const [expandedFieldMenu, setExpandedFieldMenu] = useState<Set<string>>(new Set());
+
+  // Sync Component States
+  const [componentName, setComponentName] = useState<string>('New Component');
+  const [componentBlocks, setComponentBlocks] = useState<Block[]>([]);
+  const [componentSize, setComponentSize] = useState({ width: 400, height: 300 });
+  const [selectedComponentBlockId, setSelectedComponentBlockId] = useState<string | null>(null);
+  const [draggedComponentBlock, setDraggedComponentBlock] = useState<string | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [savedComponents, setSavedComponents] = useState<ComponentConfig[]>([]);
+  const componentCanvasRef = useRef<HTMLDivElement>(null);
+  const [showComponentsModal, setShowComponentsModal] = useState(false);
+  const [editingComponentId, setEditingComponentId] = useState<string | null>(null); // Track which component is being edited
+  const [showEditComponentModal, setShowEditComponentModal] = useState(false); // Modal to select component to edit
+  const [resizingComponentBlock, setResizingComponentBlock] = useState<string | null>(null); // Block being resized
+  const [resizeDirection, setResizeDirection] = useState<string | null>(null); // Direction of resize
+  const [resizeStartPos, setResizeStartPos] = useState({ x: 0, y: 0 }); // Start position for resize
+  const [resizeStartSize, setResizeStartSize] = useState({ width: 0, height: 0 }); // Start size for resize
+  const [expandedSyncFields, setExpandedSyncFields] = useState<Set<string>>(new Set()); // Expanded fields in Sync tab
+  const [selectedArrayField, setSelectedArrayField] = useState<string | null>(null); // Selected array field for index
+  const [componentDataIndex, setComponentDataIndex] = useState<number>(0); // Selected index for array data
+
+  // Toggle expanded state for Sync field (left panel in Sync tab)
+  const toggleSyncFieldExpanded = (field: string) => {
+    setExpandedSyncFields(prev => {
+      const next = new Set(prev);
+      if (next.has(field)) {
+        next.delete(field);
+      } else {
+        next.add(field);
+      }
+      return next;
+    });
+  };
+
+  // Check if a field is an array of objects
+  const isArrayOfObjects = (fieldName: string): boolean => {
+    if (!apiData.data) return false;
+    // Handle case where data is an array (use first item)
+    const rootData = Array.isArray(apiData.data)
+      ? (apiData.data[0] as Record<string, unknown>)
+      : (apiData.data as Record<string, unknown>);
+    if (!rootData) return false;
+    const fieldValue = rootData[fieldName];
+    return Array.isArray(fieldValue) && fieldValue.length > 0 && typeof fieldValue[0] === 'object' && fieldValue[0] !== null;
+  };
+
+  // Get array field length
+  const getArrayFieldLength = (fieldName: string): number => {
+    if (!apiData.data) return 0;
+    const rootData = Array.isArray(apiData.data)
+      ? (apiData.data[0] as Record<string, unknown>)
+      : (apiData.data as Record<string, unknown>);
+    if (!rootData) return 0;
+    const fieldValue = rootData[fieldName];
+    return Array.isArray(fieldValue) ? fieldValue.length : 0;
+  };
+
+  // Get all array fields from API data
+  const getArrayFields = (): string[] => {
+    return apiData.headers.filter(h => !h.includes('.') && isArrayOfObjects(h));
+  };
+
+  // Cache root data to avoid repeated lookups
+  // Get root data from API response
+  const rootData = useMemo(() => {
+    if (!apiData.data) return null;
+    return Array.isArray(apiData.data)
+      ? (apiData.data[0] as Record<string, unknown>)
+      : (apiData.data as Record<string, unknown>);
+  }, [apiData.data]);
+
+  // Get value from array field at specific index (for Settings panel preview)
+  const getArrayFieldValue = useCallback((fieldName: string, subField: string, index: number): unknown => {
+    if (!rootData) return undefined;
+    const fieldValue = rootData[fieldName];
+    if (Array.isArray(fieldValue) && fieldValue[index]) {
+      return (fieldValue[index] as Record<string, unknown>)[subField];
+    }
+    return undefined;
+  }, [rootData]);
 
   // Toggle expanded state for field menu (left panel)
   const toggleFieldMenuExpanded = (field: string) => {
@@ -115,7 +218,11 @@ export default function BottomPanel({
   // Get sub-fields from a field that contains array of objects
   const getSubFieldsFromArrayField = (fieldName: string): string[] => {
     if (!apiData.data) return [];
-    const rootData = apiData.data as Record<string, unknown>;
+    // Handle case where data is an array (use first item)
+    const rootData = Array.isArray(apiData.data)
+      ? (apiData.data[0] as Record<string, unknown>)
+      : (apiData.data as Record<string, unknown>);
+    if (!rootData) return [];
     const fieldValue = rootData[fieldName];
 
     if (Array.isArray(fieldValue) && fieldValue.length > 0 && typeof fieldValue[0] === 'object' && fieldValue[0] !== null) {
@@ -241,6 +348,255 @@ export default function BottomPanel({
     }
   };
 
+  // ============ Sync Component Functions ============
+
+  // Add field as text block to component canvas
+  const addFieldToComponent = (fieldName: string) => {
+    const newBlock: Block = {
+      id: `comp-block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      type: 'text',
+      position: { x: 10 + (componentBlocks.length % 3) * 130, y: 10 + Math.floor(componentBlocks.length / 3) * 30 },
+      size: { width: 120, height: 24 },
+      variableKey: fieldName,
+      label: fieldName,
+      style: {
+        backgroundColor: 'transparent',
+        textColor: '#60a5fa',
+        fontSize: 14,
+        fontWeight: 'normal',
+        fontFamily: 'Arial',
+        textAlign: 'left',
+        borderRadius: 0,
+        padding: 4,
+        borderWidth: 0,
+        borderColor: 'transparent',
+      },
+    };
+    setComponentBlocks([...componentBlocks, newBlock]);
+  };
+
+  // Add all fields at once
+  const addAllFieldsToComponent = () => {
+    const fields = apiData.headers.filter(h => !h.includes('.'));
+    const newBlocks: Block[] = fields.map((field, idx) => ({
+      id: `comp-block-${Date.now()}-${idx}-${Math.random().toString(36).substr(2, 9)}`,
+      type: 'text' as BlockType,
+      position: { x: 10 + (idx % 4) * 100, y: 10 + Math.floor(idx / 4) * 28 },
+      size: { width: 90, height: 22 },
+      variableKey: field,
+      label: field,
+      style: {
+        backgroundColor: 'transparent',
+        textColor: '#60a5fa',
+        fontSize: 12,
+        fontWeight: 'normal',
+        fontFamily: 'Arial',
+        textAlign: 'left',
+        borderRadius: 0,
+        padding: 4,
+        borderWidth: 0,
+        borderColor: 'transparent',
+      },
+    }));
+    setComponentBlocks(newBlocks);
+  };
+
+  // Update component block
+  const updateComponentBlock = (blockId: string, updates: Partial<Block>) => {
+    setComponentBlocks(componentBlocks.map(b =>
+      b.id === blockId ? { ...b, ...updates } : b
+    ));
+  };
+
+  // Delete component block
+  const deleteComponentBlock = (blockId: string) => {
+    setComponentBlocks(componentBlocks.filter(b => b.id !== blockId));
+    if (selectedComponentBlockId === blockId) {
+      setSelectedComponentBlockId(null);
+    }
+  };
+
+  // Handle drag start for component block
+  const handleComponentBlockDragStart = (e: React.MouseEvent, blockId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const block = componentBlocks.find(b => b.id === blockId);
+    if (!block || !componentCanvasRef.current) return;
+
+    const canvasRect = componentCanvasRef.current.getBoundingClientRect();
+
+    setDraggedComponentBlock(blockId);
+    setSelectedComponentBlockId(blockId);
+    // Calculate offset from where user clicked relative to block position
+    setDragOffset({
+      x: e.clientX - canvasRect.left - block.position.x,
+      y: e.clientY - canvasRect.top - block.position.y
+    });
+  };
+
+  // Handle drag move for component block
+  const handleComponentCanvasMouseMove = (e: React.MouseEvent) => {
+    // Handle resize
+    if (resizingComponentBlock && componentCanvasRef.current) {
+      const block = componentBlocks.find(b => b.id === resizingComponentBlock);
+      if (!block) return;
+
+      const deltaX = e.clientX - resizeStartPos.x;
+      const deltaY = e.clientY - resizeStartPos.y;
+
+      let newWidth = resizeStartSize.width;
+      let newHeight = resizeStartSize.height;
+
+      if (resizeDirection?.includes('e')) newWidth = Math.max(20, resizeStartSize.width + deltaX);
+      if (resizeDirection?.includes('s')) newHeight = Math.max(10, resizeStartSize.height + deltaY);
+      if (resizeDirection?.includes('w')) newWidth = Math.max(20, resizeStartSize.width - deltaX);
+      if (resizeDirection?.includes('n')) newHeight = Math.max(10, resizeStartSize.height - deltaY);
+
+      updateComponentBlock(resizingComponentBlock, {
+        size: { width: Math.round(newWidth), height: Math.round(newHeight) }
+      });
+      return;
+    }
+
+    // Handle drag
+    if (!draggedComponentBlock || !componentCanvasRef.current) return;
+
+    const rect = componentCanvasRef.current.getBoundingClientRect();
+    const block = componentBlocks.find(b => b.id === draggedComponentBlock);
+    if (!block) return;
+
+    const newX = Math.max(0, Math.min(e.clientX - rect.left - dragOffset.x, componentSize.width - block.size.width));
+    const newY = Math.max(0, Math.min(e.clientY - rect.top - dragOffset.y, componentSize.height - block.size.height));
+
+    updateComponentBlock(draggedComponentBlock, {
+      position: { x: Math.round(newX), y: Math.round(newY) }
+    });
+  };
+
+  // Handle drag/resize end
+  const handleComponentCanvasMouseUp = () => {
+    setDraggedComponentBlock(null);
+    setResizingComponentBlock(null);
+    setResizeDirection(null);
+  };
+
+  // Handle resize start
+  const handleComponentBlockResizeStart = (e: React.MouseEvent, blockId: string, direction: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const block = componentBlocks.find(b => b.id === blockId);
+    if (!block) return;
+
+    setResizingComponentBlock(blockId);
+    setResizeDirection(direction);
+    setResizeStartPos({ x: e.clientX, y: e.clientY });
+    setResizeStartSize({ width: block.size.width, height: block.size.height });
+    setSelectedComponentBlockId(blockId);
+  };
+
+  // Save component to file
+  const saveComponent = async () => {
+    if (!componentName.trim()) {
+      alert('Please enter a component name');
+      return;
+    }
+
+    if (componentBlocks.length === 0) {
+      alert('Please add at least one block to the component');
+      return;
+    }
+
+    const component: ComponentConfig = {
+      id: editingComponentId || `component-${Date.now()}`,
+      name: componentName,
+      description: '',
+      size: componentSize,
+      blocks: componentBlocks,
+      arrayField: selectedArrayField || undefined,
+      dataIndex: componentDataIndex,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+
+    try {
+      const response = await fetch('/api/save-component', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          componentName: componentName,
+          config: component,
+        }),
+      });
+
+      if (response.ok) {
+        alert(`Component "${componentName}" saved successfully!`);
+        loadSavedComponents();
+
+        // Notify parent to update all instances of this component on main canvas
+        if (onComponentUpdate && editingComponentId) {
+          onComponentUpdate(component);
+        }
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to save component: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error saving component:', error);
+      alert('Error saving component: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
+  };
+
+  // Load saved components list
+  const loadSavedComponents = async () => {
+    try {
+      const response = await fetch('/api/load-components');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.components) {
+          setSavedComponents(data.components.map((c: { name: string; path: string; config: ComponentConfig }) => ({
+            id: c.config?.id || c.name,
+            name: c.config?.name || c.name,
+            description: c.config?.description || '',
+            size: c.config?.size || { width: 400, height: 300 },
+            blocks: c.config?.blocks || [],
+            createdAt: c.config?.createdAt || Date.now(),
+            updatedAt: c.config?.updatedAt || Date.now(),
+          })));
+        }
+      }
+    } catch (error) {
+      console.error('Error loading components:', error);
+    }
+  };
+
+  // Load a saved component into editor for editing
+  const loadComponentForEdit = (component: ComponentConfig) => {
+    setEditingComponentId(component.id);
+    setComponentName(component.name);
+    setComponentSize(component.size);
+    // Clone blocks with new IDs to avoid conflicts
+    setComponentBlocks(component.blocks.map(b => ({
+      ...b,
+      id: `comp-block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    })));
+    setSelectedComponentBlockId(null);
+    setShowEditComponentModal(false);
+  };
+
+  // Clear/New component
+  const clearComponent = () => {
+    setEditingComponentId(null);
+    setComponentName('New Component');
+    setComponentBlocks([]);
+    setComponentSize({ width: 400, height: 300 });
+    setSelectedComponentBlockId(null);
+  };
+
+  // Get selected component block
+  const selectedComponentBlock = componentBlocks.find(b => b.id === selectedComponentBlockId);
+
   const tabs: { id: TabType; label: string; icon: React.ReactNode; show: boolean }[] = [
     { id: 'tools', label: 'Tools', icon: <Wrench size={14} />, show: true },
     { id: 'block', label: 'Block', icon: <Palette size={14} />, show: !!selectedBlock },
@@ -286,6 +642,16 @@ export default function BottomPanel({
                 <span className="text-xs text-gray-400">{template.label}</span>
               </button>
             ))}
+            <div className="w-px h-12 bg-gray-700 mx-1" />
+            {/* Components Button */}
+            <button
+              onClick={() => { setShowComponentsModal(true); loadSavedComponents(); }}
+              className="flex flex-col items-center justify-center px-3 py-1 bg-purple-900 border border-purple-700 rounded hover:bg-purple-800 hover:border-purple-500 transition-colors min-w-[70px]"
+              title="Add Component"
+            >
+              <span className="text-purple-400"><Box size={18} /></span>
+              <span className="text-xs text-purple-300">Components</span>
+            </button>
           </div>
         )}
 
@@ -468,19 +834,33 @@ export default function BottomPanel({
         {/* Background Tab */}
         {activeTab === 'bg' && (
           <div className="flex items-center gap-2 p-2 h-full">
-            <span className="text-xs text-gray-400">Image URL:</span>
-            <input
-              type="text"
-              value={backgroundImage}
-              onChange={(e) => onBackgroundChange(e.target.value)}
-              placeholder="https://example.com/image.jpg"
-              className="flex-1 max-w-md px-2 py-1 bg-gray-800 border border-gray-700 rounded text-xs text-white"
-            />
+            <span className="text-xs text-gray-400">Background:</span>
+            <label className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs cursor-pointer hover:bg-blue-700 flex items-center gap-1.5">
+              <ImageIcon size={14} />
+              Choose Image
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      const dataUrl = event.target?.result as string;
+                      onBackgroundChange(dataUrl);
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+                className="hidden"
+              />
+            </label>
             {backgroundImage && (
               <>
                 <div className="w-16 h-12 border border-gray-700 rounded overflow-hidden flex-shrink-0">
                   <img src={backgroundImage} alt="BG" className="w-full h-full object-cover" />
                 </div>
+                <span className="text-xs text-green-400">✓ Image loaded</span>
                 <button
                   onClick={() => onBackgroundChange('')}
                   className="px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 flex items-center justify-center"
@@ -537,6 +917,26 @@ export default function BottomPanel({
               {isEditMode ? <Pencil size={12} /> : <Eye size={12} />}
               {isEditMode ? 'Edit' : 'View'}
             </button>
+            <div className="w-px h-10 bg-gray-700" />
+            {/* Save/Load Project */}
+            <div className="flex items-center gap-1">
+              <button
+                onClick={onSaveProject}
+                disabled={isSaving}
+                className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                title="Save Project to config folder"
+              >
+                {isSaving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                Save
+              </button>
+              <button
+                onClick={onLoadProject}
+                className="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 flex items-center gap-1"
+                title="Load Project from config folder"
+              >
+                <FolderOpen size={12} /> Load
+              </button>
+            </div>
             <div className="w-px h-10 bg-gray-700" />
             {/* Import/Export */}
             <div className="flex items-center gap-1">
@@ -611,16 +1011,746 @@ export default function BottomPanel({
               >
                 Data
               </button>
+              <button
+                onClick={() => { setModalTab('sync'); loadSavedComponents(); }}
+                className={`px-4 py-2 text-xs font-medium transition-colors flex items-center gap-1 ${
+                  modalTab === 'sync'
+                    ? 'bg-gray-900 text-white border-b-2 border-green-500'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                }`}
+              >
+                <RefreshCw size={12} /> Sync
+              </button>
             </div>
 
             {/* Modal Body */}
-            <div className="overflow-auto flex-1 p-4 dark-scrollbar">
+            <div className="overflow-auto flex-1 p-0 dark-scrollbar">
               {modalTab === 'data' ? (
                 <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap break-words bg-gray-900 p-4 rounded border border-gray-700 overflow-auto max-h-[calc(80vh-150px)] dark-scrollbar">
                   {JSON.stringify(apiData.data, null, 2)}
                 </pre>
+              ) : modalTab === 'sync' ? (
+                /* ============ SYNC TAB CONTENT ============ */
+                <div className="flex gap-0 h-[calc(80vh-150px)]">
+                  {/* Left Panel - Field List */}
+                  <div className="w-48 flex-shrink-0 bg-gray-900 border border-gray-700 rounded overflow-auto dark-scrollbar">
+                    <div className="p-2 bg-gray-800 border-b border-gray-700 sticky top-0 flex items-center justify-between">
+                      <span className="text-xs text-gray-400 font-medium">Fields</span>
+                      <button
+                        onClick={addAllFieldsToComponent}
+                        className="px-1.5 py-0.5 bg-green-600 text-white rounded text-[10px] hover:bg-green-700 flex items-center gap-0.5"
+                        title="Add all fields"
+                      >
+                        <Plus size={10} /> All
+                      </button>
+                    </div>
+                    <div className="p-1 space-y-0.5">
+                      {/* Show sub-fields of selected array field first */}
+                      {selectedArrayField && (
+                        <div className="mb-2 pb-2 border-b border-gray-700">
+                          <div className="px-2 py-1 text-[10px] text-yellow-400 font-medium flex items-center gap-1">
+                            <Package size={10} /> {selectedArrayField}[{componentDataIndex}]
+                          </div>
+                          <div className="ml-2 border-l border-yellow-600/50 pl-1 space-y-0.5">
+                            {getSubFieldsFromArrayField(selectedArrayField).map((subField, subIdx) => (
+                              <div
+                                key={subIdx}
+                                onClick={() => addFieldToComponent(`${selectedArrayField}.${subField}`)}
+                                className="flex items-center justify-between px-2 py-1 rounded text-[11px] font-mono text-green-400 hover:bg-gray-700 cursor-pointer group"
+                              >
+                                <span className="truncate">{subField}</span>
+                                <Plus size={10} className="text-gray-500 group-hover:text-green-400" />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Other fields */}
+                      {apiData.headers.filter(h => !h.includes('.')).map((header, idx) => {
+                        const hasSubFields = isArrayOfObjects(header);
+                        const subFields = hasSubFields ? getSubFieldsFromArrayField(header) : [];
+                        const isExpanded = expandedSyncFields.has(header);
+                        const isSelectedArray = header === selectedArrayField;
+
+                        return (
+                          <div key={idx}>
+                            {/* Main Field */}
+                            <div
+                              className={`flex items-center justify-between px-2 py-1.5 rounded text-xs font-mono hover:bg-gray-700 cursor-pointer group ${
+                                isSelectedArray ? 'bg-yellow-900/30 text-yellow-400' : 'text-blue-400'
+                              }`}
+                            >
+                              {hasSubFields ? (
+                                <>
+                                  <div
+                                    className="flex items-center gap-1 flex-1"
+                                    onClick={() => {
+                                      // If clicking on array field, select it for index
+                                      if (!isSelectedArray) {
+                                        setSelectedArrayField(header);
+                                        setComponentDataIndex(0);
+                                      } else {
+                                        toggleSyncFieldExpanded(header);
+                                      }
+                                    }}
+                                  >
+                                    {isSelectedArray ? (
+                                      <span className="text-yellow-400">✓</span>
+                                    ) : (
+                                      <span className={`transition-transform ${isExpanded ? 'rotate-90' : ''}`}>▶</span>
+                                    )}
+                                    <span className={`truncate ${isSelectedArray ? 'text-yellow-400' : 'text-yellow-400'}`}>{header}</span>
+                                    <span className="text-[9px] text-gray-500">📦 {getArrayFieldLength(header)}</span>
+                                  </div>
+                                  {!isSelectedArray && (
+                                    <Plus
+                                      size={12}
+                                      className="text-gray-500 hover:text-green-400"
+                                      onClick={(e) => { e.stopPropagation(); addFieldToComponent(header); }}
+                                    />
+                                  )}
+                                </>
+                              ) : (
+                                <>
+                                  <span
+                                    className="truncate flex-1"
+                                    onClick={() => addFieldToComponent(header)}
+                                  >{header}</span>
+                                  <Plus
+                                    size={12}
+                                    className="text-gray-500 group-hover:text-green-400"
+                                    onClick={() => addFieldToComponent(header)}
+                                  />
+                                </>
+                              )}
+                            </div>
+
+                            {/* Sub Fields - only show if expanded and NOT the selected array */}
+                            {hasSubFields && isExpanded && !isSelectedArray && (
+                              <div className="ml-3 border-l border-gray-700 pl-1 space-y-0.5">
+                                {subFields.map((subField, subIdx) => (
+                                  <div
+                                    key={subIdx}
+                                    onClick={() => addFieldToComponent(`${header}.${subField}`)}
+                                    className="flex items-center justify-between px-2 py-1 rounded text-[11px] font-mono text-green-400 hover:bg-gray-700 cursor-pointer group"
+                                  >
+                                    <span className="truncate">{subField}</span>
+                                    <Plus size={10} className="text-gray-500 group-hover:text-green-400" />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Center - Component Canvas */}
+                  <div className="flex-1 flex flex-col">
+                    {/* Canvas Header */}
+                    <div className="p-2 bg-gray-800 border border-gray-700 rounded-t flex items-center gap-2">
+                      {/* Edit Indicator */}
+                      {editingComponentId && (
+                        <span className="px-1.5 py-0.5 bg-purple-600/30 text-purple-400 rounded text-[10px] border border-purple-500/50">
+                          Editing
+                        </span>
+                      )}
+                      <input
+                        type="text"
+                        value={componentName}
+                        onChange={(e) => setComponentName(e.target.value)}
+                        className="flex-1 px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-xs focus:outline-none focus:border-blue-500"
+                        placeholder="Component Name"
+                      />
+                      <button
+                        onClick={() => { setShowEditComponentModal(true); loadSavedComponents(); }}
+                        className="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 flex items-center gap-1"
+                        title="Load saved component to edit"
+                      >
+                        <FolderOpen size={12} /> Load
+                      </button>
+                      <button
+                        onClick={clearComponent}
+                        className="px-2 py-1 bg-gray-600 text-white rounded text-xs hover:bg-gray-700 flex items-center gap-1"
+                        title="Clear and create new component"
+                      >
+                        <Plus size={12} /> New
+                      </button>
+                      <button
+                        onClick={saveComponent}
+                        className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 flex items-center gap-1"
+                      >
+                        <Save size={12} /> Save
+                      </button>
+                    </div>
+
+                    {/* Canvas Area */}
+                    <div
+                      className="flex-1 bg-gray-950 border border-gray-700 border-t-0 rounded-b overflow-auto relative"
+                      onMouseMove={handleComponentCanvasMouseMove}
+                      onMouseUp={handleComponentCanvasMouseUp}
+                      onMouseLeave={handleComponentCanvasMouseUp}
+                    >
+                      <div
+                        ref={componentCanvasRef}
+                        className="relative bg-gray-900"
+                        style={{ width: componentSize.width, height: componentSize.height, minWidth: '100%', minHeight: '100%' }}
+                      >
+                        {/* Grid Pattern */}
+                        <div
+                          className="absolute inset-0 opacity-20"
+                          style={{
+                            backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
+                            backgroundSize: '20px 20px'
+                          }}
+                        />
+
+                        {/* Component Blocks */}
+                        {componentBlocks.map((block) => {
+                          // Show only variable name, not actual data
+                          const displayText = block.label;
+
+                          return (
+                          <div
+                            key={block.id}
+                            onMouseDown={(e) => handleComponentBlockDragStart(e, block.id)}
+                            onClick={() => setSelectedComponentBlockId(block.id)}
+                            className={`absolute cursor-move select-none ${
+                              selectedComponentBlockId === block.id ? 'ring-2 ring-blue-500' : ''
+                            }`}
+                            style={{
+                              left: block.position.x,
+                              top: block.position.y,
+                              width: block.size.width,
+                              height: block.size.height,
+                              backgroundColor: block.style.backgroundColor,
+                              color: block.style.textColor,
+                              fontSize: block.style.fontSize,
+                              fontWeight: block.style.fontWeight,
+                              fontFamily: block.style.fontFamily,
+                              textAlign: block.style.textAlign,
+                              borderRadius: block.style.borderRadius,
+                              padding: block.style.padding,
+                              borderWidth: block.style.borderWidth,
+                              borderColor: block.style.borderColor,
+                              borderStyle: 'solid',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: block.style.textAlign === 'center' ? 'center' : block.style.textAlign === 'right' ? 'flex-end' : 'flex-start',
+                            }}
+                          >
+                            {displayText}
+
+                            {/* Resize Handles - Show when selected */}
+                            {selectedComponentBlockId === block.id && (
+                              <>
+                                {/* Right edge */}
+                                <div
+                                  className="absolute top-0 right-0 w-2 h-full cursor-e-resize hover:bg-blue-500/30"
+                                  onMouseDown={(e) => handleComponentBlockResizeStart(e, block.id, 'e')}
+                                />
+                                {/* Bottom edge */}
+                                <div
+                                  className="absolute bottom-0 left-0 w-full h-2 cursor-s-resize hover:bg-blue-500/30"
+                                  onMouseDown={(e) => handleComponentBlockResizeStart(e, block.id, 's')}
+                                />
+                                {/* Bottom-right corner */}
+                                <div
+                                  className="absolute bottom-0 right-0 w-3 h-3 cursor-se-resize bg-blue-500 rounded-tl"
+                                  onMouseDown={(e) => handleComponentBlockResizeStart(e, block.id, 'se')}
+                                />
+                                {/* Left edge */}
+                                <div
+                                  className="absolute top-0 left-0 w-2 h-full cursor-w-resize hover:bg-blue-500/30"
+                                  onMouseDown={(e) => handleComponentBlockResizeStart(e, block.id, 'w')}
+                                />
+                                {/* Top edge */}
+                                <div
+                                  className="absolute top-0 left-0 w-full h-2 cursor-n-resize hover:bg-blue-500/30"
+                                  onMouseDown={(e) => handleComponentBlockResizeStart(e, block.id, 'n')}
+                                />
+                              </>
+                            )}
+                          </div>
+                        );
+                        })}
+
+                        {/* Empty State */}
+                        {componentBlocks.length === 0 && (
+                          <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-sm">
+                            คลิก field ด้านซ้ายเพื่อเพิ่มลง Canvas
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Panel - Block Settings */}
+                  <div className="w-56 flex-shrink-0 bg-gray-900 border border-gray-700 rounded overflow-auto dark-scrollbar">
+                    <div className="p-2 bg-gray-800 border-b border-gray-700 sticky top-0">
+                      <span className="text-xs text-gray-400 font-medium">Settings</span>
+                    </div>
+                    {/* Canvas Size - Always visible */}
+                    <div className="p-2 border-b border-gray-700">
+                      <div className="flex items-center gap-1 text-[10px] text-gray-500 mb-1">
+                        <Maximize2 size={10} /> Canvas Size
+                      </div>
+                      <div className="grid grid-cols-2 gap-1">
+                        <div>
+                          <label className="text-[10px] text-gray-500 cursor-ew-resize select-none"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              const startX = e.clientX;
+                              const startWidth = componentSize.width;
+                              const handleMouseMove = (moveEvent: MouseEvent) => {
+                                const delta = moveEvent.clientX - startX;
+                                setComponentSize({ ...componentSize, width: Math.max(100, startWidth + delta) });
+                              };
+                              const handleMouseUp = () => {
+                                document.removeEventListener('mousemove', handleMouseMove);
+                                document.removeEventListener('mouseup', handleMouseUp);
+                              };
+                              document.addEventListener('mousemove', handleMouseMove);
+                              document.addEventListener('mouseup', handleMouseUp);
+                            }}
+                          >Width ↔</label>
+                          <input
+                            type="number"
+                            value={componentSize.width}
+                            onChange={(e) => setComponentSize({ ...componentSize, width: Number(e.target.value) })}
+                            className="w-full px-1 py-0.5 bg-gray-700 border border-gray-600 rounded text-white text-[11px]"
+                            title="Canvas Width"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-gray-500 cursor-ns-resize select-none"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              const startY = e.clientY;
+                              const startHeight = componentSize.height;
+                              const handleMouseMove = (moveEvent: MouseEvent) => {
+                                const delta = moveEvent.clientY - startY;
+                                setComponentSize({ ...componentSize, height: Math.max(100, startHeight + delta) });
+                              };
+                              const handleMouseUp = () => {
+                                document.removeEventListener('mousemove', handleMouseMove);
+                                document.removeEventListener('mouseup', handleMouseUp);
+                              };
+                              document.addEventListener('mousemove', handleMouseMove);
+                              document.addEventListener('mouseup', handleMouseUp);
+                            }}
+                          >Height ↕</label>
+                          <input
+                            type="number"
+                            value={componentSize.height}
+                            onChange={(e) => setComponentSize({ ...componentSize, height: Number(e.target.value) })}
+                            className="w-full px-1 py-0.5 bg-gray-700 border border-gray-600 rounded text-white text-[11px]"
+                            title="Canvas Height"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Data Index Selector */}
+                    {getArrayFields().length > 0 && (
+                      <div className="p-2 border-b border-gray-700">
+                        <div className="flex items-center gap-1 text-[10px] text-yellow-400 mb-1">
+                          <Package size={10} /> Data Index
+                        </div>
+                        {/* Array Field Selector */}
+                        <div className="mb-1">
+                          <label className="text-[10px] text-gray-500">Array Field</label>
+                          <select
+                            value={selectedArrayField || ''}
+                            onChange={(e) => {
+                              setSelectedArrayField(e.target.value || null);
+                              setComponentDataIndex(0);
+                            }}
+                            className="w-full px-1 py-0.5 bg-gray-700 border border-gray-600 rounded text-white text-[11px]"
+                            title="Select array field for data index"
+                          >
+                            <option value="">-- Select --</option>
+                            {getArrayFields().map((field) => (
+                              <option key={field} value={field}>{field} ({getArrayFieldLength(field)} items)</option>
+                            ))}
+                          </select>
+                        </div>
+                        {/* Index Selector */}
+                        {selectedArrayField && (
+                          <div>
+                            <label className="text-[10px] text-gray-500">Index</label>
+                            <select
+                              value={componentDataIndex}
+                              onChange={(e) => setComponentDataIndex(Number(e.target.value))}
+                              className="w-full px-1 py-0.5 bg-gray-700 border border-gray-600 rounded text-white text-[11px]"
+                              title="Select data index"
+                            >
+                              {Array.from({ length: getArrayFieldLength(selectedArrayField) }, (_, i) => (
+                                <option key={i} value={i}>
+                                  [{i}] {(() => {
+                                    // Show first field value as preview
+                                    const subFields = getSubFieldsFromArrayField(selectedArrayField);
+                                    if (subFields.length > 0) {
+                                      const preview = getArrayFieldValue(selectedArrayField, subFields[0], i);
+                                      return preview ? String(preview).substring(0, 20) : '';
+                                    }
+                                    return '';
+                                  })()}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {selectedComponentBlock ? (
+                      <div className="p-2 space-y-2">
+                        {/* Block Header */}
+                        <div className="text-[10px] text-purple-400 font-medium border-b border-gray-700 pb-1">Block Settings</div>
+
+                        {/* Label */}
+                        <div>
+                          <label className="text-[10px] text-gray-500">Label</label>
+                          <input
+                            type="text"
+                            value={selectedComponentBlock.label}
+                            onChange={(e) => updateComponentBlock(selectedComponentBlock.id, { label: e.target.value })}
+                            className="w-full px-1.5 py-0.5 bg-gray-700 border border-gray-600 rounded text-white text-[11px]"
+                            title="Block Label"
+                          />
+                        </div>
+
+                        {/* Position X, Y */}
+                        <div className="grid grid-cols-2 gap-1">
+                          <div>
+                            <label className="text-[10px] text-gray-500 cursor-ew-resize select-none"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                const startX = e.clientX;
+                                const startPosX = selectedComponentBlock.position.x;
+                                const handleMouseMove = (moveEvent: MouseEvent) => {
+                                  const delta = moveEvent.clientX - startX;
+                                  updateComponentBlock(selectedComponentBlock.id, { position: { ...selectedComponentBlock.position, x: Math.max(0, startPosX + delta) } });
+                                };
+                                const handleMouseUp = () => {
+                                  document.removeEventListener('mousemove', handleMouseMove);
+                                  document.removeEventListener('mouseup', handleMouseUp);
+                                };
+                                document.addEventListener('mousemove', handleMouseMove);
+                                document.addEventListener('mouseup', handleMouseUp);
+                              }}
+                            >X ↔</label>
+                            <input
+                              type="number"
+                              value={Math.round(selectedComponentBlock.position.x)}
+                              onChange={(e) => updateComponentBlock(selectedComponentBlock.id, { position: { ...selectedComponentBlock.position, x: Number(e.target.value) } })}
+                              className="w-full px-1 py-0.5 bg-gray-700 border border-gray-600 rounded text-white text-[11px]"
+                              title="X Position"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-gray-500 cursor-ns-resize select-none"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                const startY = e.clientY;
+                                const startPosY = selectedComponentBlock.position.y;
+                                const handleMouseMove = (moveEvent: MouseEvent) => {
+                                  const delta = moveEvent.clientY - startY;
+                                  updateComponentBlock(selectedComponentBlock.id, { position: { ...selectedComponentBlock.position, y: Math.max(0, startPosY + delta) } });
+                                };
+                                const handleMouseUp = () => {
+                                  document.removeEventListener('mousemove', handleMouseMove);
+                                  document.removeEventListener('mouseup', handleMouseUp);
+                                };
+                                document.addEventListener('mousemove', handleMouseMove);
+                                document.addEventListener('mouseup', handleMouseUp);
+                              }}
+                            >Y ↕</label>
+                            <input
+                              type="number"
+                              value={Math.round(selectedComponentBlock.position.y)}
+                              onChange={(e) => updateComponentBlock(selectedComponentBlock.id, { position: { ...selectedComponentBlock.position, y: Number(e.target.value) } })}
+                              className="w-full px-1 py-0.5 bg-gray-700 border border-gray-600 rounded text-white text-[11px]"
+                              title="Y Position"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Size W, H */}
+                        <div className="grid grid-cols-2 gap-1">
+                          <div>
+                            <label className="text-[10px] text-gray-500 cursor-ew-resize select-none"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                const startX = e.clientX;
+                                const startW = selectedComponentBlock.size.width;
+                                const handleMouseMove = (moveEvent: MouseEvent) => {
+                                  const delta = moveEvent.clientX - startX;
+                                  updateComponentBlock(selectedComponentBlock.id, { size: { ...selectedComponentBlock.size, width: Math.max(20, startW + delta) } });
+                                };
+                                const handleMouseUp = () => {
+                                  document.removeEventListener('mousemove', handleMouseMove);
+                                  document.removeEventListener('mouseup', handleMouseUp);
+                                };
+                                document.addEventListener('mousemove', handleMouseMove);
+                                document.addEventListener('mouseup', handleMouseUp);
+                              }}
+                            >W ↔</label>
+                            <input
+                              type="number"
+                              value={Math.round(selectedComponentBlock.size.width)}
+                              onChange={(e) => updateComponentBlock(selectedComponentBlock.id, { size: { ...selectedComponentBlock.size, width: Number(e.target.value) } })}
+                              className="w-full px-1 py-0.5 bg-gray-700 border border-gray-600 rounded text-white text-[11px]"
+                              title="Width"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-gray-500 cursor-ns-resize select-none"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                const startY = e.clientY;
+                                const startH = selectedComponentBlock.size.height;
+                                const handleMouseMove = (moveEvent: MouseEvent) => {
+                                  const delta = moveEvent.clientY - startY;
+                                  updateComponentBlock(selectedComponentBlock.id, { size: { ...selectedComponentBlock.size, height: Math.max(10, startH + delta) } });
+                                };
+                                const handleMouseUp = () => {
+                                  document.removeEventListener('mousemove', handleMouseMove);
+                                  document.removeEventListener('mouseup', handleMouseUp);
+                                };
+                                document.addEventListener('mousemove', handleMouseMove);
+                                document.addEventListener('mouseup', handleMouseUp);
+                              }}
+                            >H ↕</label>
+                            <input
+                              type="number"
+                              value={Math.round(selectedComponentBlock.size.height)}
+                              onChange={(e) => updateComponentBlock(selectedComponentBlock.id, { size: { ...selectedComponentBlock.size, height: Number(e.target.value) } })}
+                              className="w-full px-1 py-0.5 bg-gray-700 border border-gray-600 rounded text-white text-[11px]"
+                              title="Height"
+                            />
+                          </div>
+                        </div>
+
+                        {/* BG Color */}
+                        <div>
+                          <label className="text-[10px] text-gray-500">BG</label>
+                          <div className="flex gap-0.5 items-center">
+                            <input
+                              type="color"
+                              value={selectedComponentBlock.style.backgroundColor === 'transparent' ? '#000000' : selectedComponentBlock.style.backgroundColor}
+                              onChange={(e) => updateComponentBlock(selectedComponentBlock.id, { style: { ...selectedComponentBlock.style, backgroundColor: e.target.value } })}
+                              className="w-6 h-5 rounded cursor-pointer border border-gray-600"
+                              disabled={selectedComponentBlock.style.backgroundColor === 'transparent'}
+                              title="Background Color"
+                            />
+                            <input
+                              type="text"
+                              value={selectedComponentBlock.style.backgroundColor}
+                              onChange={(e) => updateComponentBlock(selectedComponentBlock.id, { style: { ...selectedComponentBlock.style, backgroundColor: e.target.value } })}
+                              className="flex-1 min-w-0 px-1 py-0.5 bg-gray-700 border border-gray-600 rounded text-white text-[10px]"
+                              title="Background Color"
+                            />
+                            <button
+                              onClick={() => updateComponentBlock(selectedComponentBlock.id, {
+                                style: { ...selectedComponentBlock.style, backgroundColor: selectedComponentBlock.style.backgroundColor === 'transparent' ? '#3b82f6' : 'transparent' }
+                              })}
+                              className={`px-1 py-0.5 rounded border text-[9px] ${
+                                selectedComponentBlock.style.backgroundColor === 'transparent'
+                                  ? 'bg-blue-600 border-blue-500 text-white'
+                                  : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
+                              }`}
+                              title="No Background"
+                            >
+                              None
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Text Color */}
+                        <div>
+                          <label className="text-[10px] text-gray-500">Text</label>
+                          <div className="flex gap-0.5">
+                            <input
+                              type="color"
+                              value={selectedComponentBlock.style.textColor}
+                              onChange={(e) => updateComponentBlock(selectedComponentBlock.id, { style: { ...selectedComponentBlock.style, textColor: e.target.value } })}
+                              className="w-6 h-5 rounded cursor-pointer border border-gray-600"
+                              title="Text Color"
+                            />
+                            <input
+                              type="text"
+                              value={selectedComponentBlock.style.textColor}
+                              onChange={(e) => updateComponentBlock(selectedComponentBlock.id, { style: { ...selectedComponentBlock.style, textColor: e.target.value } })}
+                              className="flex-1 min-w-0 px-1 py-0.5 bg-gray-700 border border-gray-600 rounded text-white text-[10px]"
+                              title="Text Color"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Border & Radius & Padding */}
+                        <div className="grid grid-cols-3 gap-1">
+                          <div>
+                            <label className="text-[10px] text-gray-500">Border</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={selectedComponentBlock.style.borderWidth}
+                              onChange={(e) => updateComponentBlock(selectedComponentBlock.id, { style: { ...selectedComponentBlock.style, borderWidth: Number(e.target.value) } })}
+                              className="w-full px-1 py-0.5 bg-gray-700 border border-gray-600 rounded text-white text-[11px]"
+                              title="Border Width"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-gray-500">Radius</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={selectedComponentBlock.style.borderRadius}
+                              onChange={(e) => updateComponentBlock(selectedComponentBlock.id, { style: { ...selectedComponentBlock.style, borderRadius: Number(e.target.value) } })}
+                              className="w-full px-1 py-0.5 bg-gray-700 border border-gray-600 rounded text-white text-[11px]"
+                              title="Border Radius"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-gray-500">Pad</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={selectedComponentBlock.style.padding}
+                              onChange={(e) => updateComponentBlock(selectedComponentBlock.id, { style: { ...selectedComponentBlock.style, padding: Number(e.target.value) } })}
+                              className="w-full px-1 py-0.5 bg-gray-700 border border-gray-600 rounded text-white text-[11px]"
+                              title="Padding"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Border Color */}
+                        <div>
+                          <label className="text-[10px] text-gray-500">Border Color</label>
+                          <div className="flex gap-0.5">
+                            <input
+                              type="color"
+                              value={selectedComponentBlock.style.borderColor}
+                              onChange={(e) => updateComponentBlock(selectedComponentBlock.id, { style: { ...selectedComponentBlock.style, borderColor: e.target.value } })}
+                              className="w-6 h-5 rounded cursor-pointer border border-gray-600"
+                              title="Border Color"
+                            />
+                            <input
+                              type="text"
+                              value={selectedComponentBlock.style.borderColor}
+                              onChange={(e) => updateComponentBlock(selectedComponentBlock.id, { style: { ...selectedComponentBlock.style, borderColor: e.target.value } })}
+                              className="flex-1 px-1 py-0.5 bg-gray-700 border border-gray-600 rounded text-white text-[10px]"
+                              title="Border Color"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Font Size */}
+                        <div>
+                          <label className="text-[10px] text-gray-500 cursor-ew-resize select-none"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              const startX = e.clientX;
+                              const startSize = selectedComponentBlock.style.fontSize;
+                              const handleMouseMove = (moveEvent: MouseEvent) => {
+                                const delta = (moveEvent.clientX - startX) / 5;
+                                updateComponentBlock(selectedComponentBlock.id, { style: { ...selectedComponentBlock.style, fontSize: Math.max(8, Math.round(startSize + delta)) } });
+                              };
+                              const handleMouseUp = () => {
+                                document.removeEventListener('mousemove', handleMouseMove);
+                                document.removeEventListener('mouseup', handleMouseUp);
+                              };
+                              document.addEventListener('mousemove', handleMouseMove);
+                              document.addEventListener('mouseup', handleMouseUp);
+                            }}
+                          >Font Size ↔</label>
+                          <input
+                            type="number"
+                            min="8"
+                            max="200"
+                            value={selectedComponentBlock.style.fontSize}
+                            onChange={(e) => updateComponentBlock(selectedComponentBlock.id, { style: { ...selectedComponentBlock.style, fontSize: Number(e.target.value) } })}
+                            className="w-full px-1 py-0.5 bg-gray-700 border border-gray-600 rounded text-white text-[11px]"
+                            title="Font Size"
+                          />
+                        </div>
+
+                        {/* Align & Weight */}
+                        <div className="flex gap-1">
+                          <div className="flex gap-0.5">
+                            <button
+                              onClick={() => updateComponentBlock(selectedComponentBlock.id, { style: { ...selectedComponentBlock.style, textAlign: 'left' } })}
+                              className={`p-1 rounded border ${
+                                selectedComponentBlock.style.textAlign === 'left'
+                                  ? 'bg-blue-600 border-blue-500'
+                                  : 'bg-gray-700 border-gray-600 hover:bg-gray-600'
+                              }`}
+                              title="Align Left"
+                            >
+                              <AlignLeft size={12} className="text-white" />
+                            </button>
+                            <button
+                              onClick={() => updateComponentBlock(selectedComponentBlock.id, { style: { ...selectedComponentBlock.style, textAlign: 'center' } })}
+                              className={`p-1 rounded border ${
+                                selectedComponentBlock.style.textAlign === 'center'
+                                  ? 'bg-blue-600 border-blue-500'
+                                  : 'bg-gray-700 border-gray-600 hover:bg-gray-600'
+                              }`}
+                              title="Align Center"
+                            >
+                              <AlignCenter size={12} className="text-white" />
+                            </button>
+                            <button
+                              onClick={() => updateComponentBlock(selectedComponentBlock.id, { style: { ...selectedComponentBlock.style, textAlign: 'right' } })}
+                              className={`p-1 rounded border ${
+                                selectedComponentBlock.style.textAlign === 'right'
+                                  ? 'bg-blue-600 border-blue-500'
+                                  : 'bg-gray-700 border-gray-600 hover:bg-gray-600'
+                              }`}
+                              title="Align Right"
+                            >
+                              <AlignRight size={12} className="text-white" />
+                            </button>
+                          </div>
+                          <div className="flex gap-0.5">
+                            <button
+                              onClick={() => updateComponentBlock(selectedComponentBlock.id, {
+                                style: { ...selectedComponentBlock.style, fontWeight: selectedComponentBlock.style.fontWeight === 'bold' ? 'normal' : 'bold' }
+                              })}
+                              className={`p-1 rounded border ${
+                                selectedComponentBlock.style.fontWeight === 'bold'
+                                  ? 'bg-blue-600 border-blue-500'
+                                  : 'bg-gray-700 border-gray-600 hover:bg-gray-600'
+                              }`}
+                              title="Bold"
+                            >
+                              <Bold size={12} className="text-white" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Delete Button */}
+                        <button
+                          onClick={() => deleteComponentBlock(selectedComponentBlock.id)}
+                          className="w-full px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 flex items-center justify-center gap-1 mt-2"
+                        >
+                          <Trash2 size={12} /> Delete Block
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="p-4 text-center text-gray-500 text-xs">
+                        <Box size={24} className="mx-auto mb-2 opacity-50" />
+                        เลือก block เพื่อแก้ไข
+                      </div>
+                    )}
+                  </div>
+                </div>
               ) : modalTab === 'byField' ? (
-                <div className="flex gap-4 h-[calc(80vh-150px)]">
+                <div className="flex gap-0 h-[calc(80vh-150px)]">
                   {/* Field Selection List */}
                   <div className="w-56 flex-shrink-0 bg-gray-900 border border-gray-700 rounded overflow-auto dark-scrollbar">
                     <div className="p-2 bg-gray-800 border-b border-gray-700 sticky top-0">
@@ -777,7 +1907,7 @@ export default function BottomPanel({
                       </>
                     ) : (
                       <div className="flex items-center justify-center h-full text-gray-500 text-sm">
-                        👈 เลือก field จากรายการด้านซ้ายเพื่อดูค่าทั้งหมด
+                        เลือก field จากรายการด้านซ้ายเพื่อดูค่าทั้งหมด
                       </div>
                     )}
                   </div>
@@ -870,6 +2000,160 @@ export default function BottomPanel({
                       );
                     })}
                   </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Component Modal - Select saved component to edit */}
+      {showEditComponentModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]" onClick={() => setShowEditComponentModal(false)}>
+          <div
+            className="bg-gray-800 border border-gray-700 rounded-lg shadow-xl max-w-2xl max-h-[70vh] w-full mx-4 overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-700 flex-shrink-0">
+              <h3 className="text-white font-medium text-sm flex items-center gap-2">
+                <FolderOpen size={16} className="text-blue-400" /> Load Component to Edit
+              </h3>
+              <button
+                onClick={() => setShowEditComponentModal(false)}
+                className="text-gray-400 hover:text-white p-1"
+                title="Close"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            {/* Modal Body */}
+            <div className="overflow-auto flex-1 p-4 dark-scrollbar">
+              {savedComponents.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Package size={48} className="mx-auto mb-3 opacity-50" />
+                  <p className="text-sm">No components saved yet</p>
+                  <p className="text-xs mt-1">Save a component first to edit it later</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {savedComponents.map((component) => (
+                    <div
+                      key={component.id}
+                      className="bg-gray-900 border border-gray-700 rounded-lg p-3 hover:border-blue-500 cursor-pointer transition-colors group"
+                      onClick={() => loadComponentForEdit(component)}
+                    >
+                      {/* Component Preview */}
+                      <div className="bg-gray-950 border border-gray-700 rounded h-20 mb-2 flex items-center justify-center overflow-hidden">
+                        <div className="relative w-full h-full" style={{ transform: 'scale(0.3)', transformOrigin: 'top left' }}>
+                          {component.blocks.slice(0, 5).map((block) => (
+                            <div
+                              key={block.id}
+                              className="absolute text-[10px] truncate"
+                              style={{
+                                left: block.position.x * 0.3,
+                                top: block.position.y * 0.3,
+                                color: block.style.textColor,
+                                backgroundColor: block.style.backgroundColor,
+                                padding: '2px 4px',
+                                borderRadius: 2,
+                              }}
+                            >
+                              {block.label}
+                            </div>
+                          ))}
+                        </div>
+                        {component.blocks.length === 0 && (
+                          <span className="text-gray-600 text-xs">Empty</span>
+                        )}
+                      </div>
+                      {/* Component Info */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-white text-sm font-medium truncate">{component.name}</span>
+                        <span className="text-gray-500 text-xs">{component.blocks.length} blocks</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Components Modal */}
+      {showComponentsModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowComponentsModal(false)}>
+          <div
+            className="bg-gray-800 border border-gray-700 rounded-lg shadow-xl max-w-2xl max-h-[70vh] w-full mx-4 overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-700 flex-shrink-0">
+              <h3 className="text-white font-medium text-sm flex items-center gap-2">
+                <Package size={16} className="text-purple-400" /> Components
+              </h3>
+              <button
+                onClick={() => setShowComponentsModal(false)}
+                className="text-gray-400 hover:text-white p-1"
+                title="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="overflow-auto flex-1 p-4 dark-scrollbar">
+              {savedComponents.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Package size={48} className="mx-auto mb-3 opacity-50" />
+                  <p className="text-sm">No components saved yet</p>
+                  <p className="text-xs mt-1">Create components from the API Sync tab</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {savedComponents.map((component) => (
+                    <div
+                      key={component.id}
+                      className="bg-gray-900 border border-gray-700 rounded-lg p-3 hover:border-purple-500 cursor-pointer transition-colors group"
+                      onClick={() => {
+                        if (onAddComponent) {
+                          onAddComponent(component);
+                        }
+                        setShowComponentsModal(false);
+                      }}
+                    >
+                      {/* Component Preview */}
+                      <div className="bg-gray-950 border border-gray-700 rounded h-20 mb-2 flex items-center justify-center overflow-hidden">
+                        <div className="relative w-full h-full" style={{ transform: 'scale(0.3)', transformOrigin: 'top left' }}>
+                          {component.blocks.slice(0, 5).map((block) => (
+                            <div
+                              key={block.id}
+                              className="absolute text-[10px] truncate"
+                              style={{
+                                left: block.position.x * 0.3,
+                                top: block.position.y * 0.3,
+                                color: block.style.textColor,
+                                backgroundColor: block.style.backgroundColor,
+                                padding: '2px 4px',
+                                borderRadius: 2,
+                              }}
+                            >
+                              {block.label}
+                            </div>
+                          ))}
+                        </div>
+                        {component.blocks.length === 0 && (
+                          <span className="text-gray-600 text-xs">Empty</span>
+                        )}
+                      </div>
+                      {/* Component Info */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-white text-sm font-medium truncate">{component.name}</span>
+                        <span className="text-gray-500 text-xs">{component.blocks.length} blocks</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

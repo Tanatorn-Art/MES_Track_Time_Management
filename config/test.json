@@ -1,0 +1,185 @@
+{
+  "id": "dashboard-1",
+  "name": "Test",
+  "backgroundImage": "/config/img/test-backgroundImage-1764726154859.jpeg",
+  "canvasSize": {
+    "width": 1920,
+    "height": 1080
+  },
+  "blocks": [
+    {
+      "id": "block-1764726225790",
+      "type": "image",
+      "position": {
+        "x": 100,
+        "y": 100
+      },
+      "size": {
+        "width": 200,
+        "height": 150
+      },
+      "variableKey": "",
+      "label": "Image",
+      "style": {
+        "backgroundColor": "#374151",
+        "textColor": "#9ca3af",
+        "fontSize": 24,
+        "fontWeight": "bold",
+        "borderRadius": 8,
+        "padding": 12,
+        "borderWidth": 0,
+        "borderColor": "#3b82f6"
+      }
+    },
+    {
+      "id": "block-1764726227126",
+      "type": "clock",
+      "position": {
+        "x": 141,
+        "y": 281
+      },
+      "size": {
+        "width": 150,
+        "height": 60
+      },
+      "variableKey": "",
+      "label": "Clock",
+      "style": {
+        "backgroundColor": "#1f2937",
+        "textColor": "#f59e0b",
+        "fontSize": 24,
+        "fontWeight": "bold",
+        "borderRadius": 8,
+        "padding": 12,
+        "borderWidth": 0,
+        "borderColor": "#3b82f6"
+      }
+    },
+    {
+      "id": "block-1764726227662",
+      "type": "table",
+      "position": {
+        "x": 424,
+        "y": 127
+      },
+      "size": {
+        "width": 250,
+        "height": 150
+      },
+      "variableKey": "",
+      "label": "Table",
+      "style": {
+        "backgroundColor": "#1f2937",
+        "textColor": "#e5e7eb",
+        "fontSize": 24,
+        "fontWeight": "bold",
+        "borderRadius": 8,
+        "padding": 12,
+        "borderWidth": 0,
+        "borderColor": "#3b82f6"
+      }
+    },
+    {
+      "id": "block-1764726229575",
+      "type": "chart",
+      "position": {
+        "x": 546,
+        "y": 307
+      },
+      "size": {
+        "width": 200,
+        "height": 150
+      },
+      "variableKey": "",
+      "label": "Chart",
+      "style": {
+        "backgroundColor": "#1f2937",
+        "textColor": "#60a5fa",
+        "fontSize": 24,
+        "fontWeight": "bold",
+        "borderRadius": 8,
+        "padding": 12,
+        "borderWidth": 0,
+        "borderColor": "#3b82f6"
+      }
+    },
+    {
+      "id": "block-1764726231222",
+      "type": "label",
+      "position": {
+        "x": 944,
+        "y": 118
+      },
+      "size": {
+        "width": 257.4972229003906,
+        "height": 276.53887939453125
+      },
+      "variableKey": "",
+      "label": "Label",
+      "style": {
+        "backgroundColor": "transparent",
+        "textColor": "#ffffff",
+        "fontSize": 16,
+        "fontWeight": "bold",
+        "borderRadius": 8,
+        "padding": 12,
+        "borderWidth": 0,
+        "borderColor": "#3b82f6"
+      }
+    },
+    {
+      "id": "block-1764726234486",
+      "type": "number",
+      "position": {
+        "x": 939,
+        "y": 351
+      },
+      "size": {
+        "width": 472.4972229003906,
+        "height": 177.53887939453125
+      },
+      "variableKey": "",
+      "label": "Number",
+      "style": {
+        "backgroundColor": "#059669",
+        "textColor": "#ffffff",
+        "fontSize": 32,
+        "fontWeight": "bold",
+        "borderRadius": 8,
+        "padding": 12,
+        "borderWidth": 0,
+        "borderColor": "#3b82f6"
+      }
+    },
+    {
+      "id": "block-1764726237200",
+      "type": "text",
+      "position": {
+        "x": 115,
+        "y": 543
+      },
+      "size": {
+        "width": 150,
+        "height": 60
+      },
+      "variableKey": "",
+      "label": "Text",
+      "style": {
+        "backgroundColor": "#1e40af",
+        "textColor": "#ffffff",
+        "fontSize": 24,
+        "fontWeight": "bold",
+        "borderRadius": 8,
+        "padding": 12,
+        "borderWidth": 0,
+        "borderColor": "#3b82f6"
+      }
+    }
+  ],
+  "apiConfig": {
+    "url": "",
+    "method": "GET",
+    "headers": {},
+    "refreshInterval": 0
+  }
+}

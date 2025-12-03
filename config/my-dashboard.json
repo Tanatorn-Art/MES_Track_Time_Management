@@ -1,0 +1,16 @@
+{
+  "id": "dashboard-1",
+  "name": "My Dashboard",
+  "backgroundImage": "",
+  "canvasSize": {
+    "width": 1920,
+    "height": 1080
+  },
+  "blocks": [],
+  "apiConfig": {
+    "url": "",
+    "method": "GET",
+    "headers": {},
+    "refreshInterval": 0
+  }
+}

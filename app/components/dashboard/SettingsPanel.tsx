@@ -94,15 +94,49 @@ export default function SettingsPanel({
         )}
 
         <label className="block mb-2">
-          <span className="text-sm text-gray-400">Refresh Interval (seconds)</span>
+          <span className="text-sm text-gray-400">Refresh Interval (seconds) - Polling Mode</span>
           <input
             type="number"
             value={apiConfig.refreshInterval}
             onChange={(e) => onApiConfigChange({ ...apiConfig, refreshInterval: parseInt(e.target.value) || 0 })}
             min="0"
-            className="w-full mt-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded text-sm"
+            disabled={apiConfig.wsEnabled}
+            className={`w-full mt-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded text-sm ${apiConfig.wsEnabled ? 'opacity-50' : ''}`}
           />
         </label>
+
+        {/* WebSocket Config */}
+        <div className="mb-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-300">🔌 WebSocket (Real-time)</span>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={apiConfig.wsEnabled || false}
+                onChange={(e) => onApiConfigChange({ ...apiConfig, wsEnabled: e.target.checked })}
+                className="sr-only peer"
+                aria-label="Enable WebSocket"
+              />
+              <div className="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div>
+            </label>
+          </div>
+
+          {apiConfig.wsEnabled && (
+            <input
+              type="text"
+              value={apiConfig.wsUrl || ''}
+              onChange={(e) => onApiConfigChange({ ...apiConfig, wsUrl: e.target.value })}
+              placeholder="ws://localhost:8080 or wss://..."
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-sm"
+            />
+          )}
+
+          {!apiConfig.wsEnabled && (
+            <p className="text-xs text-gray-500">
+              Enable for real-time updates without polling. More efficient than refresh interval.
+            </p>
+          )}
+        </div>
 
         {/* Headers */}
         <div className="mb-2">

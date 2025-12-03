@@ -1,0 +1,169 @@
+{
+  "id": "component-1764735808002",
+  "name": "Tes_componen1",
+  "description": "",
+  "size": {
+    "width": 400,
+    "height": 300
+  },
+  "blocks": [
+    {
+      "id": "comp-block-1764735485666-rjqm5tmm3",
+      "type": "text",
+      "position": {
+        "x": 14,
+        "y": 19
+      },
+      "size": {
+        "width": 120,
+        "height": 24
+      },
+      "variableKey": "data.htcCode",
+      "label": "data.htcCode",
+      "style": {
+        "backgroundColor": "transparent",
+        "textColor": "#60a5fa",
+        "fontSize": 14,
+        "fontWeight": "normal",
+        "fontFamily": "Arial",
+        "textAlign": "left",
+        "borderRadius": 0,
+        "padding": 4,
+        "borderWidth": 0,
+        "borderColor": "transparent"
+      }
+    },
+    {
+      "id": "comp-block-1764735485666-9laeplp2h",
+      "type": "text",
+      "position": {
+        "x": 13,
+        "y": 48
+      },
+      "size": {
+        "width": 120,
+        "height": 24
+      },
+      "variableKey": "data.departmentGroup",
+      "label": "data.departmentGroup",
+      "style": {
+        "backgroundColor": "transparent",
+        "textColor": "#60a5fa",
+        "fontSize": 14,
+        "fontWeight": "normal",
+        "fontFamily": "Arial",
+        "textAlign": "left",
+        "borderRadius": 0,
+        "padding": 4,
+        "borderWidth": 0,
+        "borderColor": "transparent"
+      }
+    },
+    {
+      "id": "comp-block-1764735485666-8x93q8exa",
+      "type": "text",
+      "position": {
+        "x": 13,
+        "y": 76
+      },
+      "size": {
+        "width": 120,
+        "height": 24
+      },
+      "variableKey": "data.workDateNumber",
+      "label": "data.workDateNumber",
+      "style": {
+        "backgroundColor": "transparent",
+        "textColor": "#60a5fa",
+        "fontSize": 14,
+        "fontWeight": "normal",
+        "fontFamily": "Arial",
+        "textAlign": "left",
+        "borderRadius": 0,
+        "padding": 4,
+        "borderWidth": 0,
+        "borderColor": "transparent"
+      }
+    },
+    {
+      "id": "comp-block-1764735615889-atbmkee8y",
+      "type": "text",
+      "position": {
+        "x": 13,
+        "y": 105
+      },
+      "size": {
+        "width": 120,
+        "height": 24
+      },
+      "variableKey": "data.htcCode",
+      "label": "data.htcCode",
+      "style": {
+        "backgroundColor": "transparent",
+        "textColor": "#60a5fa",
+        "fontSize": 14,
+        "fontWeight": "normal",
+        "fontFamily": "Arial",
+        "textAlign": "left",
+        "borderRadius": 0,
+        "padding": 4,
+        "borderWidth": 0,
+        "borderColor": "transparent"
+      }
+    },
+    {
+      "id": "comp-block-1764735616337-wvzjm8fil",
+      "type": "text",
+      "position": {
+        "x": 13,
+        "y": 134
+      },
+      "size": {
+        "width": 120,
+        "height": 24
+      },
+      "variableKey": "data.departmentGroup",
+      "label": "data.departmentGroup",
+      "style": {
+        "backgroundColor": "transparent",
+        "textColor": "#60a5fa",
+        "fontSize": 14,
+        "fontWeight": "normal",
+        "fontFamily": "Arial",
+        "textAlign": "left",
+        "borderRadius": 0,
+        "padding": 4,
+        "borderWidth": 0,
+        "borderColor": "transparent"
+      }
+    },
+    {
+      "id": "comp-block-1764735804609-ou25hmdeb",
+      "type": "text",
+      "position": {
+        "x": 17,
+        "y": 160
+      },
+      "size": {
+        "width": 120,
+        "height": 24
+      },
+      "variableKey": "success",
+      "label": "success",
+      "style": {
+        "backgroundColor": "transparent",
+        "textColor": "#60a5fa",
+        "fontSize": 14,
+        "fontWeight": "normal",
+        "fontFamily": "Arial",
+        "textAlign": "left",
+        "borderRadius": 0,
+        "padding": 4,
+        "borderWidth": 0,
+        "borderColor": "transparent"
+      }
+    }
+  ],
+  "createdAt": 1764735808002,
+  "updatedAt": 1764735808002
+}

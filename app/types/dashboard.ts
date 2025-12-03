@@ -15,6 +15,8 @@ export interface BlockStyle {
   textColor: string;
   fontSize: number;
   fontWeight: string;
+  fontFamily: string;
+  textAlign: 'left' | 'center' | 'right';
   borderRadius: number;
   padding: number;
   borderWidth: number;
@@ -32,6 +34,15 @@ export interface Block {
   label: string;
   style: BlockStyle;
   content?: string; // For static content like labels
+  groupId?: string; // ID of the group this block belongs to
+  sourceComponentId?: string; // ID of the component this block was created from
+  sourceBlockId?: string; // Original block ID in the source component
+}
+
+export interface BlockGroup {
+  id: string;
+  name: string;
+  isExpanded: boolean; // Whether the folder is expanded in layer panel
 }
 
 export interface BlockTemplate {
@@ -47,7 +58,10 @@ export interface ApiConfig {
   method: 'GET' | 'POST';
   headers: Record<string, string>;
   body?: string;
-  refreshInterval: number; // in seconds
+  refreshInterval: number; // in seconds (for polling)
+  // WebSocket config
+  wsEnabled?: boolean;
+  wsUrl?: string;
 }
 
 export interface DashboardConfig {
@@ -56,6 +70,7 @@ export interface DashboardConfig {
   backgroundImage: string;
   canvasSize: Size;
   blocks: Block[];
+  groups: BlockGroup[]; // Groups for organizing blocks into folders
   apiConfig: ApiConfig;
 }
 
@@ -73,4 +88,17 @@ export interface ApiData {
   loading: boolean;
   error: string | null;
   lastFetched: number | null;
+}
+
+// Component for reusable block groups
+export interface ComponentConfig {
+  id: string;
+  name: string;
+  description?: string;
+  size: Size;
+  blocks: Block[];
+  arrayField?: string; // The array field used for data binding (e.g., "data")
+  dataIndex?: number; // The index within the array field
+  createdAt: number;
+  updatedAt: number;
 }

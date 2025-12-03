@@ -23,6 +23,10 @@ interface DraggableBlockProps {
   onDelete: () => void;
   canvasRef?: React.RefObject<HTMLDivElement | null>;
   boundValue?: string;
+  // Multi-select drag support
+  selectedBlockIds?: string[];
+  allBlocks?: Block[];
+  onMultiBlocksUpdate?: (blocks: Block[]) => void;
 }
 
 export default function DraggableBlock({
@@ -34,6 +38,9 @@ export default function DraggableBlock({
   onDelete,
   canvasRef,
   boundValue,
+  selectedBlockIds = [],
+  allBlocks = [],
+  onMultiBlocksUpdate,
 }: DraggableBlockProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
@@ -76,13 +83,38 @@ export default function DraggableBlock({
         const newX = e.clientX - canvasOffset.x - dragOffset.x;
         const newY = e.clientY - canvasOffset.y - dragOffset.y;
 
-        onUpdate({
-          ...block,
-          position: {
-            x: Math.max(0, newX),
-            y: Math.max(0, newY),
-          },
-        });
+        // Calculate delta movement
+        const deltaX = newX - block.position.x;
+        const deltaY = newY - block.position.y;
+
+        // Check if this block is part of multi-selection
+        const isMultiSelected = selectedBlockIds.length > 1 && selectedBlockIds.includes(block.id);
+
+        if (isMultiSelected && onMultiBlocksUpdate) {
+          // Move all selected blocks together
+          const updatedBlocks = allBlocks.map(b => {
+            if (selectedBlockIds.includes(b.id)) {
+              return {
+                ...b,
+                position: {
+                  x: Math.max(0, b.position.x + deltaX),
+                  y: Math.max(0, b.position.y + deltaY),
+                },
+              };
+            }
+            return b;
+          });
+          onMultiBlocksUpdate(updatedBlocks);
+        } else {
+          // Single block drag
+          onUpdate({
+            ...block,
+            position: {
+              x: Math.max(0, newX),
+              y: Math.max(0, newY),
+            },
+          });
+        }
       } else if (isResizing && blockRef.current) {
         const rect = blockRef.current.getBoundingClientRect();
         onUpdate({
@@ -130,6 +162,7 @@ export default function DraggableBlock({
   return (
     <div
       ref={blockRef}
+      data-block-id={block.id}
       onClick={(e) => {
         e.stopPropagation();
         onSelect();
@@ -145,6 +178,7 @@ export default function DraggableBlock({
         color: block.style.textColor,
         fontSize: block.style.fontSize,
         fontWeight: block.style.fontWeight,
+        fontFamily: block.style.fontFamily || 'Arial',
         borderRadius: block.style.borderRadius,
         padding: block.style.padding,
         borderWidth: block.style.borderWidth,
@@ -155,8 +189,9 @@ export default function DraggableBlock({
         boxShadow: isSelected && isEditMode ? '0 0 0 2px #3b82f6' : 'none',
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
+        alignItems: block.style.textAlign === 'left' ? 'flex-start' : block.style.textAlign === 'right' ? 'flex-end' : 'center',
         justifyContent: 'center',
+        textAlign: block.style.textAlign || 'center',
         overflow: 'hidden',
       }}
       className="transition-shadow"
@@ -178,15 +213,21 @@ export default function DraggableBlock({
       {/* Display bound value or label */}
       {boundValue !== undefined ? (
         <div
-          className="truncate w-full text-center font-medium"
-          style={{ fontSize: block.style.fontSize }}
+          className="truncate w-full font-medium"
+          style={{
+            fontSize: block.style.fontSize,
+            textAlign: block.style.textAlign || 'center',
+          }}
         >
           {boundValue}
         </div>
       ) : block.label && (
         <div
-          className="truncate w-full text-center font-medium"
-          style={{ fontSize: block.style.fontSize }}
+          className="truncate w-full font-medium"
+          style={{
+            fontSize: block.style.fontSize,
+            textAlign: block.style.textAlign || 'center',
+          }}
         >
           {block.label}
         </div>
@@ -194,7 +235,10 @@ export default function DraggableBlock({
 
       {/* Content placeholder for different types */}
       {block.content && !boundValue && (
-        <div className="text-xs opacity-70 truncate w-full text-center">
+        <div
+          className="text-xs opacity-70 truncate w-full"
+          style={{ textAlign: block.style.textAlign || 'center' }}
+        >
           {block.content}
         </div>
       )}
