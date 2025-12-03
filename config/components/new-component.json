@@ -58,9 +58,36 @@
         "borderWidth": 0,
         "borderColor": "transparent"
       }
+    },
+    {
+      "id": "comp-block-1764744293174-yit31aa3l",
+      "type": "text",
+      "position": {
+        "x": 0,
+        "y": 108
+      },
+      "size": {
+        "width": 120,
+        "height": 24
+      },
+      "variableKey": "data.privilegeName",
+      "label": "data.privilegeName",
+      "style": {
+        "backgroundColor": "transparent",
+        "textColor": "#60a5fa",
+        "fontSize": 14,
+        "fontWeight": "normal",
+        "fontFamily": "Arial",
+        "textAlign": "left",
+        "borderRadius": 0,
+        "padding": 4,
+        "borderWidth": 0,
+        "borderColor": "transparent"
+      }
     }
   ],
-  "dataIndex": 0,
-  "createdAt": 1764742894308,
-  "updatedAt": 1764742894308
+  "arrayField": "data",
+  "dataIndex": 2,
+  "createdAt": 1764744296340,
+  "updatedAt": 1764744296340
 }

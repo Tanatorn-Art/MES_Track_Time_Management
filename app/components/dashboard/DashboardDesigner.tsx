@@ -454,13 +454,10 @@ export default function DashboardDesigner() {
 
         // Get array field info for variableKey transformation
         const arrayField = updatedComponent.arrayField;
-        // Extract dataIndex from existing blocks' variableKey
-        let dataIndex = 0;
-        const existingVarKey = firstInstanceBlock.variableKey;
-        if (existingVarKey) {
-          const match = existingVarKey.match(/\[(\d+)\]/);
-          if (match) dataIndex = parseInt(match[1], 10);
-        }
+
+        // Use dataIndex from updatedComponent (from Sync tab)
+        // This will update all instances to use the new index
+        const dataIndex = updatedComponent.dataIndex ?? 0;
 
         // Remove old blocks from this instance
         newBlocks = newBlocks.filter((b) => b.groupId !== groupId);
@@ -628,6 +625,15 @@ export default function DashboardDesigner() {
         }
       });
 
+      // Merge apiData.url into config.apiConfig for saving
+      const configToSave = {
+        ...config,
+        apiConfig: {
+          ...config.apiConfig,
+          url: apiData.url || config.apiConfig.url,
+        },
+      };
+
       const response = await fetch('/api/save-project', {
         method: 'POST',
         headers: {
@@ -635,7 +641,7 @@ export default function DashboardDesigner() {
         },
         body: JSON.stringify({
           projectName: config.name,
-          config,
+          config: configToSave,
           images,
         }),
       });
@@ -653,7 +659,7 @@ export default function DashboardDesigner() {
     } finally {
       setIsSaving(false);
     }
-  }, [config]);
+  }, [config, apiData.url]);
 
   // Load project list
   const handleLoadProject = useCallback(async () => {
@@ -681,6 +687,10 @@ export default function DashboardDesigner() {
 
       if (result.success) {
         setConfig(result.config);
+        // Sync apiData.url from loaded config
+        if (result.config.apiConfig?.url) {
+          setApiData((prev) => ({ ...prev, url: result.config.apiConfig.url }));
+        }
         setShowLoadModal(false);
         alert(`Project "${projectName}" loaded successfully!`);
       } else {
@@ -695,6 +705,11 @@ export default function DashboardDesigner() {
   // API handlers
   const handleApiUrlChange = useCallback((url: string) => {
     setApiData((prev) => ({ ...prev, url }));
+    // Also sync to config.apiConfig for saving
+    setConfig((prev) => ({
+      ...prev,
+      apiConfig: { ...prev.apiConfig, url },
+    }));
   }, []);
 
   const handleApiFetch = useCallback(async () => {
@@ -808,7 +823,8 @@ export default function DashboardDesigner() {
               }`}
               title={showLiveData ? 'Showing live data' : 'Showing variable names'}
             >
-              {showLiveData ? ' 🟢 Live Data' : '⚙️ Variables'}
+              {showLiveData ? <Eye size={14} /> : <EyeOff size={14} />}
+              {showLiveData ? 'Live Data' : 'Variables'}
             </button>
           </div>
         )}

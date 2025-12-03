@@ -1,0 +1,223 @@
+{
+  "id": "component-1764744411636",
+  "name": "หๆไำๆไำๆไำ",
+  "description": "",
+  "size": {
+    "width": 400,
+    "height": 300
+  },
+  "blocks": [
+    {
+      "id": "comp-block-1764746516354-v5xtsddfz",
+      "type": "text",
+      "position": {
+        "x": 0,
+        "y": 24
+      },
+      "size": {
+        "width": 120,
+        "height": 24
+      },
+      "variableKey": "data.codePrivilege",
+      "label": "data.codePrivilege",
+      "style": {
+        "backgroundColor": "transparent",
+        "textColor": "#60a5fa",
+        "fontSize": 14,
+        "fontWeight": "normal",
+        "fontFamily": "Arial",
+        "textAlign": "left",
+        "borderRadius": 0,
+        "padding": 4,
+        "borderWidth": 0,
+        "borderColor": "transparent"
+      }
+    },
+    {
+      "id": "comp-block-1764746516354-983p71xlj",
+      "type": "text",
+      "position": {
+        "x": 0,
+        "y": 212
+      },
+      "size": {
+        "width": 369,
+        "height": 55
+      },
+      "variableKey": "data.privilegeName",
+      "label": "data.privilegeName",
+      "style": {
+        "backgroundColor": "transparent",
+        "textColor": "#60a5fa",
+        "fontSize": 31,
+        "fontWeight": "normal",
+        "fontFamily": "Arial",
+        "textAlign": "left",
+        "borderRadius": 0,
+        "padding": 4,
+        "borderWidth": 0,
+        "borderColor": "transparent"
+      }
+    },
+    {
+      "id": "comp-block-1764746516354-nwuek9vo2",
+      "type": "text",
+      "position": {
+        "x": 0,
+        "y": 160
+      },
+      "size": {
+        "width": 120,
+        "height": 24
+      },
+      "variableKey": "data.defaultVaildDays",
+      "label": "data.defaultVaildDays",
+      "style": {
+        "backgroundColor": "transparent",
+        "textColor": "#60a5fa",
+        "fontSize": 14,
+        "fontWeight": "normal",
+        "fontFamily": "Arial",
+        "textAlign": "left",
+        "borderRadius": 0,
+        "padding": 4,
+        "borderWidth": 0,
+        "borderColor": "transparent"
+      }
+    },
+    {
+      "id": "comp-block-1764746516354-slp8roy89",
+      "type": "text",
+      "position": {
+        "x": 0,
+        "y": 62
+      },
+      "size": {
+        "width": 120,
+        "height": 24
+      },
+      "variableKey": "data.updatedAt",
+      "label": "data.updatedAt",
+      "style": {
+        "backgroundColor": "transparent",
+        "textColor": "#60a5fa",
+        "fontSize": 14,
+        "fontWeight": "normal",
+        "fontFamily": "Arial",
+        "textAlign": "left",
+        "borderRadius": 0,
+        "padding": 4,
+        "borderWidth": 0,
+        "borderColor": "transparent"
+      }
+    },
+    {
+      "id": "comp-block-1764746516354-pnrqo3yrn",
+      "type": "text",
+      "position": {
+        "x": 0,
+        "y": 129
+      },
+      "size": {
+        "width": 120,
+        "height": 24
+      },
+      "variableKey": "data.categoryId",
+      "label": "data.categoryId",
+      "style": {
+        "backgroundColor": "transparent",
+        "textColor": "#60a5fa",
+        "fontSize": 14,
+        "fontWeight": "normal",
+        "fontFamily": "Arial",
+        "textAlign": "left",
+        "borderRadius": 0,
+        "padding": 4,
+        "borderWidth": 0,
+        "borderColor": "transparent"
+      }
+    },
+    {
+      "id": "comp-block-1764746516354-r4590auqm",
+      "type": "text",
+      "position": {
+        "x": 0,
+        "y": 94
+      },
+      "size": {
+        "width": 120,
+        "height": 24
+      },
+      "variableKey": "data.categoryId",
+      "label": "data.categoryId",
+      "style": {
+        "backgroundColor": "transparent",
+        "textColor": "#60a5fa",
+        "fontSize": 14,
+        "fontWeight": "normal",
+        "fontFamily": "Arial",
+        "textAlign": "left",
+        "borderRadius": 0,
+        "padding": 4,
+        "borderWidth": 0,
+        "borderColor": "transparent"
+      }
+    },
+    {
+      "id": "comp-block-1764746516354-csa18j8yt",
+      "type": "text",
+      "position": {
+        "x": 3,
+        "y": 195
+      },
+      "size": {
+        "width": 120,
+        "height": 24
+      },
+      "variableKey": "data.codePrivilege",
+      "label": "data.codePrivilege",
+      "style": {
+        "backgroundColor": "transparent",
+        "textColor": "#60a5fa",
+        "fontSize": 14,
+        "fontWeight": "normal",
+        "fontFamily": "Arial",
+        "textAlign": "left",
+        "borderRadius": 0,
+        "padding": 4,
+        "borderWidth": 0,
+        "borderColor": "transparent"
+      }
+    },
+    {
+      "id": "comp-block-1764746516354-8dg4rf11d",
+      "type": "text",
+      "position": {
+        "x": 244,
+        "y": 25
+      },
+      "size": {
+        "width": 120,
+        "height": 24
+      },
+      "variableKey": "data.id",
+      "label": "data.id",
+      "style": {
+        "backgroundColor": "transparent",
+        "textColor": "#60a5fa",
+        "fontSize": 14,
+        "fontWeight": "normal",
+        "fontFamily": "Arial",
+        "textAlign": "left",
+        "borderRadius": 0,
+        "padding": 4,
+        "borderWidth": 0,
+        "borderColor": "transparent"
+      }
+    }
+  ],
+  "arrayField": "data",
+  "dataIndex": 6,
+  "createdAt": 1764746534732,
+  "updatedAt": 1764746534732
+}

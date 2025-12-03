@@ -1,185 +1,202 @@
 {
   "id": "dashboard-1",
   "name": "Test",
-  "backgroundImage": "/config/img/test-backgroundImage-1764726154859.jpeg",
+  "backgroundImage": "",
   "canvasSize": {
     "width": 1920,
     "height": 1080
   },
   "blocks": [
     {
-      "id": "block-1764726225790",
-      "type": "image",
-      "position": {
-        "x": 100,
-        "y": 100
-      },
-      "size": {
-        "width": 200,
-        "height": 150
-      },
-      "variableKey": "",
-      "label": "Image",
-      "style": {
-        "backgroundColor": "#374151",
-        "textColor": "#9ca3af",
-        "fontSize": 24,
-        "fontWeight": "bold",
-        "borderRadius": 8,
-        "padding": 12,
-        "borderWidth": 0,
-        "borderColor": "#3b82f6"
-      }
-    },
-    {
-      "id": "block-1764726227126",
-      "type": "clock",
-      "position": {
-        "x": 141,
-        "y": 281
-      },
-      "size": {
-        "width": 150,
-        "height": 60
-      },
-      "variableKey": "",
-      "label": "Clock",
-      "style": {
-        "backgroundColor": "#1f2937",
-        "textColor": "#f59e0b",
-        "fontSize": 24,
-        "fontWeight": "bold",
-        "borderRadius": 8,
-        "padding": 12,
-        "borderWidth": 0,
-        "borderColor": "#3b82f6"
-      }
-    },
-    {
-      "id": "block-1764726227662",
-      "type": "table",
-      "position": {
-        "x": 424,
-        "y": 127
-      },
-      "size": {
-        "width": 250,
-        "height": 150
-      },
-      "variableKey": "",
-      "label": "Table",
-      "style": {
-        "backgroundColor": "#1f2937",
-        "textColor": "#e5e7eb",
-        "fontSize": 24,
-        "fontWeight": "bold",
-        "borderRadius": 8,
-        "padding": 12,
-        "borderWidth": 0,
-        "borderColor": "#3b82f6"
-      }
-    },
-    {
-      "id": "block-1764726229575",
-      "type": "chart",
-      "position": {
-        "x": 546,
-        "y": 307
-      },
-      "size": {
-        "width": 200,
-        "height": 150
-      },
-      "variableKey": "",
-      "label": "Chart",
-      "style": {
-        "backgroundColor": "#1f2937",
-        "textColor": "#60a5fa",
-        "fontSize": 24,
-        "fontWeight": "bold",
-        "borderRadius": 8,
-        "padding": 12,
-        "borderWidth": 0,
-        "borderColor": "#3b82f6"
-      }
-    },
-    {
-      "id": "block-1764726231222",
-      "type": "label",
-      "position": {
-        "x": 944,
-        "y": 118
-      },
-      "size": {
-        "width": 257.4972229003906,
-        "height": 276.53887939453125
-      },
-      "variableKey": "",
-      "label": "Label",
-      "style": {
-        "backgroundColor": "transparent",
-        "textColor": "#ffffff",
-        "fontSize": 16,
-        "fontWeight": "bold",
-        "borderRadius": 8,
-        "padding": 12,
-        "borderWidth": 0,
-        "borderColor": "#3b82f6"
-      }
-    },
-    {
-      "id": "block-1764726234486",
-      "type": "number",
-      "position": {
-        "x": 939,
-        "y": 351
-      },
-      "size": {
-        "width": 472.4972229003906,
-        "height": 177.53887939453125
-      },
-      "variableKey": "",
-      "label": "Number",
-      "style": {
-        "backgroundColor": "#059669",
-        "textColor": "#ffffff",
-        "fontSize": 32,
-        "fontWeight": "bold",
-        "borderRadius": 8,
-        "padding": 12,
-        "borderWidth": 0,
-        "borderColor": "#3b82f6"
-      }
-    },
-    {
-      "id": "block-1764726237200",
+      "id": "block-1764746889394-p9rfelyrh",
       "type": "text",
       "position": {
-        "x": 115,
-        "y": 543
+        "x": 638,
+        "y": 367
       },
       "size": {
-        "width": 150,
-        "height": 60
+        "width": 433.3365478515625,
+        "height": 109.003173828125
       },
-      "variableKey": "",
-      "label": "Text",
+      "variableKey": "data[2].id",
+      "label": "data.id",
       "style": {
-        "backgroundColor": "#1e40af",
-        "textColor": "#ffffff",
-        "fontSize": 24,
-        "fontWeight": "bold",
-        "borderRadius": 8,
-        "padding": 12,
+        "backgroundColor": "transparent",
+        "textColor": "#60a5fa",
+        "fontSize": 65,
+        "fontWeight": "normal",
+        "fontFamily": "Arial",
+        "textAlign": "left",
+        "borderRadius": 0,
+        "padding": 4,
         "borderWidth": 0,
-        "borderColor": "#3b82f6"
-      }
+        "borderColor": "transparent"
+      },
+      "groupId": "component-1764746854601",
+      "sourceComponentId": "component-1764746603356",
+      "sourceBlockId": "comp-block-1764746846113-epdoceler"
+    },
+    {
+      "id": "block-1764746889394-8k4j2b96e",
+      "type": "text",
+      "position": {
+        "x": 638,
+        "y": 455
+      },
+      "size": {
+        "width": 436,
+        "height": 91
+      },
+      "variableKey": "data[2].codePrivilege",
+      "label": "data.codePrivilege",
+      "style": {
+        "backgroundColor": "transparent",
+        "textColor": "#60a5fa",
+        "fontSize": 32,
+        "fontWeight": "normal",
+        "fontFamily": "Arial",
+        "textAlign": "left",
+        "borderRadius": 0,
+        "padding": 4,
+        "borderWidth": 0,
+        "borderColor": "transparent"
+      },
+      "groupId": "component-1764746854601",
+      "sourceComponentId": "component-1764746603356",
+      "sourceBlockId": "comp-block-1764746846113-iawz61d40"
     }
   ],
   "apiConfig": {
-    "url": "",
+    "url": "http://10.35.10.47:2007/api/Privilege/getPrivilege",
     "method": "GET",
     "headers": {},
     "refreshInterval": 0
-  }
+  },
+  "groups": [
+    {
+      "id": "component-1764736076825",
+      "name": "11000286",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764736211706",
+      "name": "11000286",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764736250594",
+      "name": "11000286",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764736297433",
+      "name": "11000286",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764736570601",
+      "name": "New Component",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764737041641",
+      "name": "New Component",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764737060153",
+      "name": "New Component",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764737100956",
+      "name": "11000286",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764737209905",
+      "name": "New Component",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764737501114",
+      "name": "New Component",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764737829320",
+      "name": "New Component",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764740779089",
+      "name": "New Component",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764742568405",
+      "name": "New Component",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764742766748",
+      "name": "New Component",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764742875189",
+      "name": "New Component",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764744302710",
+      "name": "New Component",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764744323580",
+      "name": "หๆไำๆไำๆไำ",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764744417973",
+      "name": "หๆไำๆไำๆไำ",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764745917878",
+      "name": "Component_1",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764746415199",
+      "name": "หๆไำๆไำๆไำ",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764746479977",
+      "name": "หๆไำๆไำๆไำ",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764746588956",
+      "name": "Online",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764746611614",
+      "name": "Online",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764746647886",
+      "name": "Online",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764746854601",
+      "name": "Online",
+      "isExpanded": true
+    }
+  ]
 }

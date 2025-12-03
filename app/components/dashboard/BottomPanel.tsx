@@ -936,6 +936,28 @@ export default function BottomPanel({
               >
                 <FolderOpen size={12} /> Load
               </button>
+              <button
+                onClick={() => {
+                  const projectName = configName.replace(/\s+/g, '-').toLowerCase();
+                  const viewUrl = `${window.location.origin}/dashboard/view/${encodeURIComponent(projectName)}`;
+
+                  // Try modern clipboard API first, fallback to prompt
+                  if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                    navigator.clipboard.writeText(viewUrl).then(() => {
+                      alert(`Link copied!\n\n${viewUrl}\n\nSave your project first before sharing.`);
+                    }).catch(() => {
+                      prompt('Copy this link:', viewUrl);
+                    });
+                  } else {
+                    // Fallback for HTTP or unsupported browsers
+                    prompt('Copy this link (Ctrl+C):', viewUrl);
+                  }
+                }}
+                className="px-2 py-1 bg-purple-600 text-white rounded text-xs hover:bg-purple-700 flex items-center gap-1"
+                title="Get shareable view link"
+              >
+                <Link2 size={12} /> Get Link
+              </button>
             </div>
             <div className="w-px h-10 bg-gray-700" />
             {/* Import/Export */}
