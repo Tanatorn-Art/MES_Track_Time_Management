@@ -1,0 +1,68 @@
+{
+  "id": "component-1764830543885",
+  "name": "TestByThawitchai",
+  "description": "",
+  "size": {
+    "width": 400,
+    "height": 300
+  },
+  "blocks": [
+    {
+      "id": "comp-block-1764830486596-8doh8r9dh",
+      "type": "text",
+      "position": {
+        "x": 49,
+        "y": 35
+      },
+      "size": {
+        "width": 120,
+        "height": 24
+      },
+      "variableKey": "data.id",
+      "label": "data.id",
+      "style": {
+        "backgroundColor": "transparent",
+        "textColor": "#60a5fa",
+        "fontSize": 14,
+        "fontWeight": "normal",
+        "fontFamily": "Arial",
+        "textAlign": "left",
+        "borderRadius": 0,
+        "padding": 4,
+        "borderWidth": 0,
+        "borderColor": "transparent"
+      }
+    },
+    {
+      "id": "comp-block-1764830525829-6u84wjntp",
+      "type": "text",
+      "position": {
+        "x": 124,
+        "y": 36
+      },
+      "size": {
+        "width": 120,
+        "height": 24
+      },
+      "variableKey": "data.codePrivilege",
+      "label": "data.codePrivilege",
+      "style": {
+        "backgroundColor": "transparent",
+        "textColor": "#60a5fa",
+        "fontSize": 14,
+        "fontWeight": "normal",
+        "fontFamily": "Arial",
+        "textAlign": "left",
+        "borderRadius": 0,
+        "padding": 4,
+        "borderWidth": 0,
+        "borderColor": "transparent"
+      }
+    }
+  ],
+  "arrayField": "data",
+  "dataIndex": 0,
+  "indexField": "codePrivilege",
+  "createdAt": 1764830543885,
+  "updatedAt": 1764830543885
+}

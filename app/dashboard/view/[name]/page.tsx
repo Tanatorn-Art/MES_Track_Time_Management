@@ -380,6 +380,157 @@ export default function DashboardViewPage() {
             ? ''
             : (boundValue !== undefined ? boundValue : (block.content || ''));
 
+          // Render table block
+          if (block.type === 'table' && block.content === 'table') {
+            try {
+              const tableConfig = JSON.parse(block.variableKey || '{}');
+              const { columns = [], arrayField = '', style: tableStyle = {} } = tableConfig;
+
+              // Get data array from apiData
+              let dataArray: Record<string, unknown>[] = [];
+              if (apiData?.data) {
+                if (arrayField === '__ROOT_ARRAY__' && Array.isArray(apiData.data)) {
+                  dataArray = apiData.data as unknown as Record<string, unknown>[];
+                } else if (arrayField && (apiData.data as Record<string, unknown>)[arrayField]) {
+                  dataArray = (apiData.data as Record<string, unknown>)[arrayField] as Record<string, unknown>[];
+                }
+              }
+
+              const enabledColumns = columns.filter((c: { enabled: boolean }) => c.enabled);
+
+              // Calculate dynamic font size based on block size and content
+              const numColumns = enabledColumns.length || 1;
+              const numRows = Math.max(dataArray.length, 3);
+
+              const baseFontSize = tableStyle.fontSize || 12;
+              const baseHeaderFontSize = tableStyle.headerFontSize || 12;
+
+              const availableWidth = block.size.width / numColumns;
+              const availableHeight = block.size.height / (numRows + 1);
+
+              const widthScale = Math.min(1.5, Math.max(0.5, availableWidth / 80));
+              const heightScale = Math.min(1.5, Math.max(0.5, availableHeight / 25));
+              const scaleFactor = Math.min(widthScale, heightScale);
+
+              const scaledFontSize = Math.max(8, Math.min(24, Math.round(baseFontSize * scaleFactor)));
+              const scaledHeaderFontSize = Math.max(8, Math.min(24, Math.round(baseHeaderFontSize * scaleFactor)));
+              const scaledPadding = Math.max(2, Math.round(4 * scaleFactor));
+
+              return (
+                <div
+                  key={block.id}
+                  style={{
+                    position: 'absolute',
+                    left: block.position.x,
+                    top: block.position.y,
+                    width: block.size.width,
+                    height: block.size.height,
+                    backgroundColor: block.style.backgroundColor,
+                    borderRadius: block.style.borderRadius,
+                    borderWidth: block.style.borderWidth,
+                    borderColor: block.style.borderColor,
+                    borderStyle: block.style.borderWidth > 0 ? 'solid' : 'none',
+                    overflow: 'hidden',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  <div className="w-full h-full overflow-hidden">
+                    <table className="w-full h-full border-collapse text-left table-fixed" style={{ fontSize: scaledFontSize }}>
+                      <thead>
+                        <tr style={{ backgroundColor: tableStyle.headerBg || '#374151' }}>
+                          {enabledColumns.map((col: { field: string; header: string; width: number }, idx: number) => (
+                            <th
+                              key={idx}
+                              className="font-medium break-words align-top"
+                              style={{
+                                color: tableStyle.headerText || '#ffffff',
+                                fontSize: scaledHeaderFontSize,
+                                padding: scaledPadding,
+                                borderWidth: tableStyle.showBorder ? 1 : 0,
+                                borderColor: tableStyle.borderColor || '#4b5563',
+                                borderStyle: 'solid',
+                              wordBreak: 'break-word'
+                            }}
+                          >
+                            {col.header}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dataArray.length > 0 ? (
+                        dataArray.map((row, rowIdx) => (
+                          <tr
+                            key={rowIdx}
+                            style={{
+                              backgroundColor: tableStyle.stripedRows && rowIdx % 2 === 1
+                                ? (tableStyle.rowAltBg || '#111827')
+                                : (tableStyle.rowBg || '#1f2937')
+                            }}
+                          >
+                            {enabledColumns.map((col: { field: string; header: string; width: number }, colIdx: number) => (
+                              <td
+                                key={colIdx}
+                                className="break-words align-top"
+                                style={{
+                                  color: tableStyle.rowText || '#e5e7eb',
+                                  padding: scaledPadding,
+                                  borderWidth: tableStyle.showBorder ? 1 : 0,
+                                  borderColor: tableStyle.borderColor || '#4b5563',
+                                  borderStyle: 'solid',
+                                  wordBreak: 'break-word'
+                                }}
+                              >
+                                {String(row[col.field] ?? '-')}
+                              </td>
+                            ))}
+                          </tr>
+                        ))
+                      ) : showLoading ? (
+                        <tr>
+                          <td colSpan={enabledColumns.length} className="text-center py-4 text-gray-500">
+                            <div className="flex items-center justify-center gap-2">
+                              <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div>
+                              Loading...
+                            </div>
+                          </td>
+                        </tr>
+                      ) : (
+                        <tr>
+                          <td colSpan={enabledColumns.length} className="text-center py-4 text-gray-500">
+                            No data
+                          </td>
+                        </tr>
+                      )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            } catch {
+              return (
+                <div
+                  key={block.id}
+                  style={{
+                    position: 'absolute',
+                    left: block.position.x,
+                    top: block.position.y,
+                    width: block.size.width,
+                    height: block.size.height,
+                    backgroundColor: block.style.backgroundColor,
+                    color: 'red',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  Invalid table config
+                </div>
+              );
+            }
+          }
+
+          // Render regular block
           return (
             <div
               key={block.id}

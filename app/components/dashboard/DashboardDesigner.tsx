@@ -538,8 +538,11 @@ export default function DashboardDesigner() {
     const newBlocks: Block[] = component.blocks.map((block) => {
       let newVariableKey = block.variableKey;
 
-      // Transform variableKey based on arrayField type
-      if (block.variableKey && arrayField) {
+      // Skip variableKey transformation for table blocks (they use JSON config)
+      const isTableBlock = block.type === 'table' && block.content === 'table';
+
+      // Transform variableKey based on arrayField type (only for non-table blocks)
+      if (block.variableKey && arrayField && !isTableBlock) {
         if (arrayField === '__ROOT_ARRAY__') {
           // For root array, transform "station" to "[0].station"
           newVariableKey = `[${dataIndex}].${block.variableKey}`;
@@ -705,9 +708,46 @@ export default function DashboardDesigner() {
 
       if (result.success) {
         setConfig(result.config);
-        // Sync apiData.url from loaded config
+        // Sync apiData.url from loaded config and auto-fetch if URL exists
         if (result.config.apiConfig?.url) {
-          setApiData((prev) => ({ ...prev, url: result.config.apiConfig.url }));
+          setApiData((prev) => ({
+            ...prev,
+            url: result.config.apiConfig.url,
+            loading: true,
+            error: null,
+          }));
+
+          // Auto-fetch API data after loading project
+          try {
+            const proxyUrl = `/api/proxy?url=${encodeURIComponent(result.config.apiConfig.url)}`;
+            const apiResponse = await fetch(proxyUrl);
+
+            if (apiResponse.ok) {
+              const data = await apiResponse.json();
+              let headers: string[] = [];
+              if (Array.isArray(data) && data.length > 0) {
+                headers = extractKeys(data[0] as Record<string, unknown>);
+              } else if (typeof data === 'object' && data !== null) {
+                headers = extractKeys(data as Record<string, unknown>);
+              }
+
+              setApiData((prev) => ({
+                ...prev,
+                data,
+                headers,
+                loading: false,
+                error: null,
+                lastFetched: Date.now(),
+              }));
+            } else {
+              setApiData((prev) => ({ ...prev, loading: false }));
+            }
+          } catch {
+            setApiData((prev) => ({ ...prev, loading: false }));
+          }
+        } else {
+          // Clear API data if new project has no API URL
+          setApiData(DEFAULT_API_DATA);
         }
         setShowLoadModal(false);
         alert(`Project "${projectName}" loaded successfully!`);

@@ -8,7 +8,7 @@
   },
   "blocks": [
     {
-      "id": "block-1764754415366-a4m6a5cj0",
+      "id": "block-1764821075614-su0ti2jpr",
       "type": "text",
       "position": {
         "x": 8,
@@ -18,7 +18,7 @@
         "width": 473,
         "height": 68
       },
-      "variableKey": "[10].stationName",
+      "variableKey": "[8].stationName",
       "label": "stationName",
       "style": {
         "backgroundColor": "transparent",
@@ -37,7 +37,7 @@
       "sourceBlockId": "comp-block-1764750105505-vgj4po7sh"
     },
     {
-      "id": "block-1764754415366-6sxpbxd4v",
+      "id": "block-1764821075614-1wbjzsyp2",
       "type": "text",
       "position": {
         "x": 8,
@@ -47,7 +47,7 @@
         "width": 481,
         "height": 102
       },
-      "variableKey": "[10].count_DownTime_YES",
+      "variableKey": "[8].count_DownTime_YES",
       "label": "count_DownTime_YES",
       "style": {
         "backgroundColor": "transparent",
@@ -66,7 +66,7 @@
       "sourceBlockId": "comp-block-1764750136016-2jxzncpfy"
     },
     {
-      "id": "block-1764754415366-3al487o2p",
+      "id": "block-1764821075614-bv9k9fjdy",
       "type": "text",
       "position": {
         "x": 8,
@@ -76,7 +76,7 @@
         "width": 480,
         "height": 127
       },
-      "variableKey": "[10].count_DownTime_NO",
+      "variableKey": "[8].count_DownTime_NO",
       "label": "count_DownTime_NO",
       "style": {
         "backgroundColor": "transparent",
@@ -95,7 +95,7 @@
       "sourceBlockId": "comp-block-1764750179032-jbymusbik"
     },
     {
-      "id": "block-1764754415366-3va58me6t",
+      "id": "block-1764821075614-0lc629v6r",
       "type": "text",
       "position": {
         "x": 8,
@@ -105,7 +105,7 @@
         "width": 479,
         "height": 87
       },
-      "variableKey": "[10].suM_TimeDiff_Minutes",
+      "variableKey": "[8].suM_TimeDiff_Minutes",
       "label": "suM_TimeDiff_Minutes",
       "style": {
         "backgroundColor": "transparent",
@@ -124,7 +124,7 @@
       "sourceBlockId": "comp-block-1764750276776-csqhpuwvp"
     },
     {
-      "id": "block-1764755380413-sd3cwy6bw",
+      "id": "block-1764821086701-fvvlcscrm",
       "type": "text",
       "position": {
         "x": 5,
@@ -134,7 +134,7 @@
         "width": 468,
         "height": 70
       },
-      "variableKey": "[8].stationName",
+      "variableKey": "[15].stationName",
       "label": "stationName",
       "style": {
         "backgroundColor": "transparent",
@@ -153,7 +153,7 @@
       "sourceBlockId": "comp-block-1764750686121-wj20q5ys1"
     },
     {
-      "id": "block-1764755380413-mfg64qsjf",
+      "id": "block-1764821086701-gdp5s353d",
       "type": "text",
       "position": {
         "x": 5,
@@ -163,7 +163,7 @@
         "width": 470,
         "height": 69
       },
-      "variableKey": "[8].count_DownTime_YES",
+      "variableKey": "[15].count_DownTime_YES",
       "label": "count_DownTime_YES",
       "style": {
         "backgroundColor": "transparent",
@@ -182,7 +182,7 @@
       "sourceBlockId": "comp-block-1764750686121-2ny5ru3hk"
     },
     {
-      "id": "block-1764755380413-zme38pi4c",
+      "id": "block-1764821086701-n66yhm1g4",
       "type": "text",
       "position": {
         "x": 5,
@@ -192,7 +192,7 @@
         "width": 480,
         "height": 74
       },
-      "variableKey": "[8].count_DownTime_NO",
+      "variableKey": "[15].count_DownTime_NO",
       "label": "count_DownTime_NO",
       "style": {
         "backgroundColor": "transparent",
@@ -211,7 +211,7 @@
       "sourceBlockId": "comp-block-1764750686121-agkpeex89"
     },
     {
-      "id": "block-1764755380413-lcgzhm3dr",
+      "id": "block-1764821086701-0xecdx8h6",
       "type": "text",
       "position": {
         "x": 5,
@@ -221,7 +221,7 @@
         "width": 477,
         "height": 79
       },
-      "variableKey": "[8].suM_TimeDiff_Minutes",
+      "variableKey": "[15].suM_TimeDiff_Minutes",
       "label": "suM_TimeDiff_Minutes",
       "style": {
         "backgroundColor": "transparent",
@@ -241,195 +241,15 @@
     }
   ],
   "apiConfig": {
-    "url": "http://10.35.10.47:2007/api/Production/TrackTimeSummary?Plant=9773&StartTime=2025-12-03%2000:00:00&EndTime=2025-12-03%2023:59:59",
+    "url": "http://10.35.10.47:2007/api/Production/TrackTimeSummary?Plant=9771&StartTime=2025-12-04%2000%3A00%3A00&EndTime=2025-12-04%2023%3A59%3A59",
     "method": "GET",
     "headers": {},
     "refreshInterval": 5
   },
   "groups": [
     {
-      "id": "component-1764736076825",
-      "name": "11000286",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764736211706",
-      "name": "11000286",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764736250594",
-      "name": "11000286",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764736297433",
-      "name": "11000286",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764736570601",
-      "name": "New Component",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764737041641",
-      "name": "New Component",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764737060153",
-      "name": "New Component",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764737100956",
-      "name": "11000286",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764737209905",
-      "name": "New Component",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764737501114",
-      "name": "New Component",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764737829320",
-      "name": "New Component",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764740779089",
-      "name": "New Component",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764742568405",
-      "name": "New Component",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764742766748",
-      "name": "New Component",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764742875189",
-      "name": "New Component",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764744302710",
-      "name": "New Component",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764744323580",
-      "name": "หๆไำๆไำๆไำ",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764744417973",
-      "name": "หๆไำๆไำๆไำ",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764745917878",
-      "name": "Component_1",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764746415199",
-      "name": "หๆไำๆไำๆไำ",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764746479977",
-      "name": "หๆไำๆไำๆไำ",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764746588956",
-      "name": "Online",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764746611614",
-      "name": "Online",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764746647886",
-      "name": "Online",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764746854601",
-      "name": "Online",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764749195297",
-      "name": "New Component",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764749236120",
-      "name": "New Component",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764750159496",
-      "name": "New Component",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764750227032",
-      "name": "New Component",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764750299976",
-      "name": "New Component",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764750422832",
-      "name": "Station_2",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764750447607",
-      "name": "Station_2",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764750886488",
-      "name": "Station_2",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764750894640",
-      "name": "Online",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764750897575",
-      "name": "Online",
-      "isExpanded": true
-    },
-    {
       "id": "component-1764752471402",
       "name": "Online",
-      "isExpanded": true
-    },
-    {
-      "id": "component-1764752482519",
-      "name": "Station_2",
       "isExpanded": true
     },
     {

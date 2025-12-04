@@ -126,6 +126,66 @@ export default function BottomPanel({
   const [expandedFieldValues, setExpandedFieldValues] = useState<Set<string>>(new Set());
   const [expandedFieldMenu, setExpandedFieldMenu] = useState<Set<string>>(new Set());
 
+  // API Config Modal States
+  const [showApiConfigModal, setShowApiConfigModal] = useState(false);
+  const [apiEndpoint, setApiEndpoint] = useState<string>('');
+  const [apiParams, setApiParams] = useState<{ key: string; value: string; enabled: boolean }[]>([]);
+
+  // Parse URL to extract endpoint and parameters
+  const parseApiUrl = (url: string) => {
+    try {
+      const urlObj = new URL(url);
+      const endpoint = `${urlObj.origin}${urlObj.pathname}`;
+      const params: { key: string; value: string; enabled: boolean }[] = [];
+      urlObj.searchParams.forEach((value, key) => {
+        params.push({ key, value: decodeURIComponent(value), enabled: true });
+      });
+      return { endpoint, params };
+    } catch {
+      return { endpoint: url, params: [] };
+    }
+  };
+
+  // Build URL from endpoint and parameters
+  const buildApiUrl = (endpoint: string, params: { key: string; value: string; enabled: boolean }[]) => {
+    const enabledParams = params.filter(p => p.enabled && p.key.trim());
+    if (enabledParams.length === 0) return endpoint;
+    const queryString = enabledParams
+      .map(p => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`)
+      .join('&');
+    return `${endpoint}?${queryString}`;
+  };
+
+  // Open API Config Modal
+  const openApiConfigModal = () => {
+    const { endpoint, params } = parseApiUrl(apiData.url || '');
+    setApiEndpoint(endpoint);
+    setApiParams(params.length > 0 ? params : [{ key: '', value: '', enabled: true }]);
+    setShowApiConfigModal(true);
+  };
+
+  // Apply API Config
+  const applyApiConfig = () => {
+    const url = buildApiUrl(apiEndpoint, apiParams);
+    onApiUrlChange(url);
+    setShowApiConfigModal(false);
+  };
+
+  // Add new parameter
+  const addApiParam = () => {
+    setApiParams([...apiParams, { key: '', value: '', enabled: true }]);
+  };
+
+  // Remove parameter
+  const removeApiParam = (index: number) => {
+    setApiParams(apiParams.filter((_, i) => i !== index));
+  };
+
+  // Update parameter
+  const updateApiParam = (index: number, field: 'key' | 'value' | 'enabled', value: string | boolean) => {
+    setApiParams(apiParams.map((p, i) => i === index ? { ...p, [field]: value } : p));
+  };
+
   // Sync Component States
   const [componentName, setComponentName] = useState<string>('New Component');
   const [componentBlocks, setComponentBlocks] = useState<Block[]>([]);
@@ -146,6 +206,36 @@ export default function BottomPanel({
   const [selectedArrayField, setSelectedArrayField] = useState<string | null>(null); // Selected array field for index
   const [componentDataIndex, setComponentDataIndex] = useState<number>(0); // Selected index for array data
   const [selectedIndexField, setSelectedIndexField] = useState<string | null>(null); // Selected field to use as index key
+
+  // Sync Canvas Mode: 'component' or 'table'
+  const [syncCanvasMode, setSyncCanvasMode] = useState<'component' | 'table'>('component');
+
+  // Table Component States
+  const [tableName, setTableName] = useState<string>('New Table');
+  const [tableColumns, setTableColumns] = useState<{ field: string; header: string; width: number; enabled: boolean }[]>([]);
+  const [tableStyle, setTableStyle] = useState({
+    headerBg: '#374151',
+    headerText: '#ffffff',
+    rowBg: '#1f2937',
+    rowAltBg: '#111827',
+    rowText: '#e5e7eb',
+    borderColor: '#4b5563',
+    fontSize: 12,
+    headerFontSize: 12,
+    showBorder: true,
+    stripedRows: true,
+  });
+  const [savedTables, setSavedTables] = useState<{
+    id: string;
+    name: string;
+    columns: { field: string; header: string; width: number; enabled: boolean }[];
+    style: typeof tableStyle;
+    arrayField?: string;
+  }[]>([]);
+  const [editingTableId, setEditingTableId] = useState<string | null>(null);
+  const [showLoadTableModal, setShowLoadTableModal] = useState(false);
+  const [tableArrayField, setTableArrayField] = useState<string | null>(null);
+  const [showTablesModal, setShowTablesModal] = useState(false); // Modal to show saved tables in Tools tab
 
   // Toggle expanded state for Sync field (left panel in Sync tab)
   const toggleSyncFieldExpanded = (field: string) => {
@@ -619,22 +709,56 @@ export default function BottomPanel({
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.components) {
-          setSavedComponents(data.components.map((c: { name: string; path: string; config: ComponentConfig }) => ({
-            id: c.config?.id || c.name,
-            name: c.config?.name || c.name,
-            description: c.config?.description || '',
-            size: c.config?.size || { width: 400, height: 300 },
-            blocks: c.config?.blocks || [],
-            arrayField: c.config?.arrayField,
-            dataIndex: c.config?.dataIndex,
-            indexField: c.config?.indexField,
-            createdAt: c.config?.createdAt || Date.now(),
-            updatedAt: c.config?.updatedAt || Date.now(),
-          })));
+          const components: ComponentConfig[] = [];
+
+          data.components.forEach((c: { name: string; path: string; config: ComponentConfig }) => {
+            // Only load components (not tables)
+            components.push({
+              id: c.config?.id || c.name,
+              name: c.config?.name || c.name,
+              description: c.config?.description || '',
+              size: c.config?.size || { width: 400, height: 300 },
+              blocks: c.config?.blocks || [],
+              arrayField: c.config?.arrayField,
+              dataIndex: c.config?.dataIndex,
+              indexField: c.config?.indexField,
+              createdAt: c.config?.createdAt || Date.now(),
+              updatedAt: c.config?.updatedAt || Date.now(),
+            });
+          });
+
+          setSavedComponents(components);
         }
       }
     } catch (error) {
       console.error('Error loading components:', error);
+    }
+  };
+
+  // Load saved tables list (from config/componentTable folder)
+  const loadSavedTables = async () => {
+    try {
+      const response = await fetch('/api/load-components?type=table');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.components) {
+          const tables: typeof savedTables = [];
+
+          data.components.forEach((c: { name: string; path: string; config: { id?: string; name?: string; columns?: typeof tableColumns; style?: typeof tableStyle; arrayField?: string } }) => {
+            tables.push({
+              id: c.config?.id || c.name,
+              name: c.config?.name || c.name,
+              columns: c.config?.columns || [],
+              style: c.config?.style || tableStyle,
+              arrayField: c.config?.arrayField,
+            });
+          });
+
+          setSavedTables(tables);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading tables:', error);
     }
   };
 
@@ -725,6 +849,15 @@ export default function BottomPanel({
             >
               <span className="text-purple-400"><Box size={18} /></span>
               <span className="text-xs text-purple-300">Components</span>
+            </button>
+            {/* Component Tables Button */}
+            <button
+              onClick={() => { setShowTablesModal(true); loadSavedTables(); }}
+              className="flex flex-col items-center justify-center px-3 py-1 bg-green-900 border border-green-700 rounded hover:bg-green-800 hover:border-green-500 transition-colors min-w-[70px]"
+              title="Add Table Component"
+            >
+              <span className="text-green-400"><Table size={18} /></span>
+              <span className="text-xs text-green-300">Tables</span>
             </button>
           </div>
         )}
@@ -867,14 +1000,43 @@ export default function BottomPanel({
         {activeTab === 'api' && (
           <div className="flex flex-col gap-2 p-2 h-full">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs text-gray-400">URL:</span>
-              <input
-                type="text"
-                value={apiData.url}
-                onChange={(e) => onApiUrlChange(e.target.value)}
-                placeholder="https://api.example.com/data"
-                className="flex-1 max-w-lg px-2 py-1 bg-gray-800 border border-gray-700 rounded text-xs text-white"
-              />
+              {/* Config Button */}
+              <button
+                onClick={openApiConfigModal}
+                className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 flex items-center gap-1.5"
+                title="Configure API"
+              >
+                <Settings size={14} />
+                Config
+              </button>
+
+              {/* Current URL Display */}
+              <div className="flex-1 max-w-lg px-2 py-1 bg-gray-800 border border-gray-700 rounded text-xs text-gray-400 truncate" title={apiData.url || 'No API configured'}>
+                {apiData.url ? (
+                  <>
+                    <span className="text-gray-300">{(() => {
+                      try {
+                        const url = new URL(apiData.url);
+                        return url.pathname;
+                      } catch {
+                        return apiData.url;
+                      }
+                    })()}</span>
+                    {(() => {
+                      try {
+                        const url = new URL(apiData.url);
+                        const paramCount = Array.from(url.searchParams).length;
+                        return paramCount > 0 ? <span className="text-yellow-400 ml-1">({paramCount} params)</span> : null;
+                      } catch {
+                        return null;
+                      }
+                    })()}
+                  </>
+                ) : (
+                  <span className="text-gray-500 italic">Click Config to set API</span>
+                )}
+              </div>
+
               <button
                 onClick={onApiFetch}
                 disabled={apiData.loading || !apiData.url}
@@ -1083,7 +1245,7 @@ export default function BottomPanel({
       {showApiData && apiData.data && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 -mt-20 " onClick={() => setShowApiData(false)}>
           <div
-            className="bg-gray-800 border border-gray-700 rounded-lg shadow-xl max-w-4xl max-h-[80vh] w-full mx-4 overflow-hidden flex flex-col"
+            className="bg-gray-800 border border-gray-700 rounded-lg shadow-xl max-w-6xl max-h-[80vh] w-full mx-4 overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
@@ -1145,7 +1307,53 @@ export default function BottomPanel({
                 </pre>
               ) : modalTab === 'sync' ? (
                 /* ============ SYNC TAB CONTENT ============ */
-                <div className="flex gap-0 h-[calc(80vh-150px)]">
+                <div className="flex flex-col h-[calc(80vh-150px)]">
+                  {/* Mode Toggle */}
+                  <div className="flex items-center gap-2 p-2 bg-gray-800 border-b border-gray-700 flex-shrink-0">
+                    <span className="text-xs text-gray-400">Mode:</span>
+                    <button
+                      onClick={() => setSyncCanvasMode('component')}
+                      className={`px-3 py-1 rounded text-xs flex items-center gap-1 ${
+                        syncCanvasMode === 'component'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      }`}
+                    >
+                      <Box size={12} />
+                      Component
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSyncCanvasMode('table');
+                        // Initialize table columns from available fields
+                        if (tableColumns.length === 0 && apiData.data) {
+                          const fields = isRootArray()
+                            ? getRootArrayFields()
+                            : selectedArrayField
+                              ? getSubFieldsFromArrayField(selectedArrayField)
+                              : apiData.headers.filter(h => !h.includes('.'));
+                          setTableColumns(fields.slice(0, 5).map(f => ({
+                            field: f,
+                            header: f.charAt(0).toUpperCase() + f.slice(1),
+                            width: 100,
+                            enabled: true
+                          })));
+                        }
+                      }}
+                      className={`px-3 py-1 rounded text-xs flex items-center gap-1 ${
+                        syncCanvasMode === 'table'
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      }`}
+                    >
+                      <Table size={12} />
+                      Table
+                    </button>
+                  </div>
+
+                  {/* Component Mode */}
+                  {syncCanvasMode === 'component' && (
+                <div className="flex gap-0 flex-1 overflow-hidden">
                   {/* Left Panel - Field List */}
                   <div className="w-48 flex-shrink-0 bg-gray-900 border border-gray-700 rounded overflow-auto dark-scrollbar">
                     <div className="p-2 bg-gray-800 border-b border-gray-700 sticky top-0 flex items-center justify-between">
@@ -1917,6 +2125,476 @@ export default function BottomPanel({
                     )}
                   </div>
                 </div>
+                  )}
+
+                  {/* Table Mode */}
+                  {syncCanvasMode === 'table' && (
+                    <div className="flex gap-0 flex-1 overflow-hidden">
+                      {/* Left Panel - Column Selection */}
+                      <div className="w-48 flex-shrink-0 bg-gray-900 border border-gray-700 rounded overflow-auto dark-scrollbar">
+                        {/* Header */}
+                        <div className="p-2 bg-gray-800 border-b border-gray-700 sticky top-0">
+                          <span className="text-xs text-gray-400 font-medium">Columns</span>
+                        </div>
+
+                        {/* Array Field Selector */}
+                        <div className="p-2 border-b border-gray-700">
+                          <label className="text-[10px] text-gray-500">Data Source</label>
+                          <select
+                            value={tableArrayField || (isRootArray() ? '__ROOT_ARRAY__' : '')}
+                            onChange={(e) => setTableArrayField(e.target.value || null)}
+                            className="w-full px-1 py-0.5 bg-gray-700 border border-gray-600 rounded text-white text-[10px]"
+                            title="Select data source"
+                          >
+                            {isRootArray() && <option value="__ROOT_ARRAY__">📦 Root Array ({getRootArrayLength()} items)</option>}
+                            {apiData.headers.filter(h => !h.includes('.')).map((field) => {
+                              if (isArrayOfObjects(field)) {
+                                return <option key={field} value={field}>{field} ({getArrayFieldLength(field)} items)</option>;
+                              }
+                              return null;
+                            })}
+                          </select>
+                        </div>
+
+                        {/* Available Fields */}
+                        <div className="p-2 space-y-1">
+                          <div className="text-[10px] text-gray-500 mb-1">Available Fields:</div>
+                          {(() => {
+                            const source = tableArrayField || (isRootArray() ? '__ROOT_ARRAY__' : selectedArrayField);
+                            const fields = source === '__ROOT_ARRAY__'
+                              ? getRootArrayFields()
+                              : source
+                                ? getSubFieldsFromArrayField(source)
+                                : apiData.headers.filter(h => !h.includes('.'));
+                            return fields;
+                          })().map((field) => {
+                            const isAdded = tableColumns.some(c => c.field === field);
+                            return (
+                              <div
+                                key={field}
+                                onClick={() => {
+                                  if (!isAdded) {
+                                    setTableColumns([...tableColumns, { field, header: field, width: 100, enabled: true }]);
+                                  }
+                                }}
+                                className={`flex items-center justify-between px-2 py-1 rounded text-[11px] font-mono cursor-pointer ${
+                                  isAdded ? 'bg-purple-900/30 text-purple-400' : 'text-gray-300 hover:bg-gray-700'
+                                }`}
+                              >
+                                <span className="truncate">{field}</span>
+                                {isAdded ? (
+                                  <span className="text-[9px] text-purple-400">✓</span>
+                                ) : (
+                                  <Plus size={10} className="text-gray-500" />
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Center - Table Preview */}
+                      <div className="flex-1 bg-gray-950 border border-gray-700 rounded mx-2 overflow-auto dark-scrollbar">
+                        <div className="p-2 bg-gray-800 border-b border-gray-700 sticky top-0 z-10 flex items-center justify-between">
+                          {/* Left side - Table Name & Add to Canvas */}
+                          <div className="flex items-center gap-2">
+                            {editingTableId && (
+                              <span className="px-1.5 py-0.5 bg-yellow-600/30 text-yellow-400 rounded text-[9px] border border-yellow-500/50">
+                                Editing
+                              </span>
+                            )}
+                            <input
+                              type="text"
+                              value={tableName}
+                              onChange={(e) => setTableName(e.target.value)}
+                              className="w-32 px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-xs focus:outline-none focus:border-blue-500"
+                              placeholder="Table Name"
+                              title="Table Name"
+                            />
+                            <button
+                              onClick={() => {
+                                // Add table block to main canvas
+                                const tableBlock: Block = {
+                                  id: `table-${Date.now()}`,
+                                  type: 'table',
+                                  position: { x: 50, y: 50 },
+                                  size: { width: Math.max(400, tableColumns.filter(c => c.enabled).reduce((sum, c) => sum + c.width, 0) + 20), height: 300 },
+                                  variableKey: JSON.stringify({
+                                    columns: tableColumns.filter(c => c.enabled),
+                                    arrayField: tableArrayField || (isRootArray() ? '__ROOT_ARRAY__' : ''),
+                                    style: tableStyle
+                                  }),
+                                  label: tableName || 'Data Table',
+                                  style: {
+                                    backgroundColor: tableStyle.rowBg,
+                                    textColor: tableStyle.rowText,
+                                    fontSize: tableStyle.fontSize,
+                                    fontWeight: 'normal',
+                                    fontFamily: 'Inter',
+                                    textAlign: 'left',
+                                    borderRadius: 4,
+                                    padding: 0,
+                                    borderWidth: tableStyle.showBorder ? 1 : 0,
+                                    borderColor: tableStyle.borderColor
+                                  },
+                                  content: 'table'
+                                };
+                                // Use onAddComponent or direct method
+                                if (onAddComponent) {
+                                  // Create a component with table block
+                                  const tableComponent: ComponentConfig = {
+                                    id: editingTableId || `table-component-${Date.now()}`,
+                                    name: tableName,
+                                    blocks: [tableBlock],
+                                    size: tableBlock.size,
+                                    arrayField: tableArrayField || (isRootArray() ? '__ROOT_ARRAY__' : undefined),
+                                    dataIndex: 0,
+                                    createdAt: Date.now(),
+                                    updatedAt: Date.now()
+                                  };
+                                  onAddComponent(tableComponent);
+                                }
+                                setShowApiData(false);
+                              }}
+                              className="px-2 py-1 bg-purple-600 text-white rounded text-xs hover:bg-purple-700 flex items-center gap-1"
+                              title="Add table to main canvas"
+                            >
+                              <Plus size={12} /> Add to Canvas
+                            </button>
+                          </div>
+
+                          {/* Right side - New, Load, Save */}
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => { setShowLoadTableModal(true); loadSavedTables(); }}
+                              className="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 flex items-center gap-1"
+                              title="Load saved table"
+                            >
+                              <FolderOpen size={12} /> Load
+                            </button>
+                            <button
+                              onClick={() => {
+                                setTableName('New Table');
+                                setTableColumns([]);
+                                setEditingTableId(null);
+                                setTableArrayField(null);
+                              }}
+                              className="px-2 py-1 bg-gray-600 text-white rounded text-xs hover:bg-gray-500 flex items-center gap-1"
+                              title="Create new table"
+                            >
+                              <Plus size={12} /> New
+                            </button>
+                            <button
+                              onClick={async () => {
+                                // Save table to config/componentTable folder
+                                const tableConfig = {
+                                  id: editingTableId || `table-${Date.now()}`,
+                                  name: tableName,
+                                  columns: tableColumns,
+                                  style: tableStyle,
+                                  arrayField: tableArrayField || (isRootArray() ? '__ROOT_ARRAY__' : selectedArrayField) || undefined
+                                };
+
+                                try {
+                                  const response = await fetch('/api/save-component', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      componentName: tableName.replace(/[^a-zA-Z0-9_-]/g, '_'),
+                                      config: tableConfig,
+                                      type: 'table'
+                                    }),
+                                  });
+                                  const result = await response.json();
+                                  if (result.success) {
+                                    setEditingTableId(tableConfig.id);
+                                    // Reload saved tables
+                                    loadSavedTables();
+                                    alert('Table saved!');
+                                  }
+                                } catch (err) {
+                                  console.error('Save table error:', err);
+                                }
+                              }}
+                              className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 flex items-center gap-1"
+                              title="Save table"
+                            >
+                              <Save size={12} /> Save
+                            </button>
+                          </div>
+                        </div>
+                        <div className="p-4">
+                          {tableColumns.filter(c => c.enabled).length > 0 ? (
+                            <div className="overflow-auto">
+                              <table className="w-full border-collapse text-left" style={{ fontSize: tableStyle.fontSize }}>
+                                <thead>
+                                  <tr style={{ backgroundColor: tableStyle.headerBg }}>
+                                    {tableColumns.filter(c => c.enabled).map((col, idx) => (
+                                      <th
+                                        key={idx}
+                                        className="px-2 py-1.5 font-medium"
+                                        style={{
+                                          color: tableStyle.headerText,
+                                          fontSize: tableStyle.headerFontSize,
+                                          width: col.width,
+                                          borderWidth: tableStyle.showBorder ? 1 : 0,
+                                          borderColor: tableStyle.borderColor,
+                                          borderStyle: 'solid'
+                                        }}
+                                      >
+                                        {col.header}
+                                      </th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {(() => {
+                                    const source = tableArrayField || (isRootArray() ? '__ROOT_ARRAY__' : selectedArrayField);
+                                    const dataArray = source === '__ROOT_ARRAY__'
+                                      ? (apiData.data as unknown as unknown[])
+                                      : source
+                                        ? ((apiData.data as Record<string, unknown>)[source] as unknown[] || [])
+                                        : [];
+                                    return dataArray.slice(0, 10).map((row, rowIdx) => (
+                                      <tr
+                                        key={rowIdx}
+                                        style={{
+                                          backgroundColor: tableStyle.stripedRows && rowIdx % 2 === 1 ? tableStyle.rowAltBg : tableStyle.rowBg
+                                        }}
+                                      >
+                                        {tableColumns.filter(c => c.enabled).map((col, colIdx) => (
+                                          <td
+                                            key={colIdx}
+                                            className="px-2 py-1"
+                                            style={{
+                                              color: tableStyle.rowText,
+                                              borderWidth: tableStyle.showBorder ? 1 : 0,
+                                              borderColor: tableStyle.borderColor,
+                                              borderStyle: 'solid'
+                                            }}
+                                          >
+                                            {String((row as Record<string, unknown>)[col.field] ?? '-')}
+                                          </td>
+                                        ))}
+                                      </tr>
+                                    ));
+                                  })()}
+                                </tbody>
+                              </table>
+                              {(() => {
+                                const source = tableArrayField || (isRootArray() ? '__ROOT_ARRAY__' : selectedArrayField);
+                                const dataArray = source === '__ROOT_ARRAY__'
+                                  ? (apiData.data as unknown as unknown[])
+                                  : source
+                                    ? ((apiData.data as Record<string, unknown>)[source] as unknown[] || [])
+                                    : [];
+                                return dataArray.length > 10 && (
+                                  <div className="text-center text-xs text-gray-500 mt-2">
+                                    Showing 10 of {dataArray.length} rows
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          ) : (
+                            <div className="text-center py-8 text-gray-500">
+                              <Table size={32} className="mx-auto mb-2 opacity-50" />
+                              <div className="text-sm">Click fields on the left to add columns</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Right Panel - Column Settings */}
+                      <div className="w-56 flex-shrink-0 bg-gray-900 border border-gray-700 rounded overflow-auto dark-scrollbar">
+                        <div className="p-2 bg-gray-800 border-b border-gray-700 sticky top-0">
+                          <span className="text-xs text-gray-400 font-medium">Settings</span>
+                        </div>
+                        <div className="p-2 space-y-3">
+                          {/* Selected Columns */}
+                          <div>
+                            <div className="text-[10px] text-gray-500 mb-1">Columns Order (drag to reorder):</div>
+                            <div className="space-y-1">
+                              {tableColumns.map((col, idx) => (
+                                <div
+                                  key={idx}
+                                  className="flex items-center gap-1 p-1 bg-gray-800 rounded border border-gray-700"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={col.enabled}
+                                    onChange={(e) => {
+                                      const newCols = [...tableColumns];
+                                      newCols[idx].enabled = e.target.checked;
+                                      setTableColumns(newCols);
+                                    }}
+                                    className="w-3 h-3"
+                                    title="Enable column"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={col.header}
+                                    onChange={(e) => {
+                                      const newCols = [...tableColumns];
+                                      newCols[idx].header = e.target.value;
+                                      setTableColumns(newCols);
+                                    }}
+                                    className="flex-1 px-1 py-0.5 bg-gray-700 border border-gray-600 rounded text-white text-[10px]"
+                                    title="Column Header"
+                                  />
+                                  <input
+                                    type="number"
+                                    value={col.width}
+                                    onChange={(e) => {
+                                      const newCols = [...tableColumns];
+                                      newCols[idx].width = Number(e.target.value);
+                                      setTableColumns(newCols);
+                                    }}
+                                    className="w-12 px-1 py-0.5 bg-gray-700 border border-gray-600 rounded text-white text-[10px]"
+                                    title="Width"
+                                  />
+                                  <button
+                                    onClick={() => setTableColumns(tableColumns.filter((_, i) => i !== idx))}
+                                    className="p-0.5 text-gray-400 hover:text-red-400"
+                                    title="Remove column"
+                                  >
+                                    <X size={12} />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Style Settings */}
+                          <div className="border-t border-gray-700 pt-2">
+                            <div className="text-[10px] text-gray-500 mb-1">Table Style:</div>
+
+                            {/* Header Colors */}
+                            <div className="grid grid-cols-2 gap-1 mb-2">
+                              <div>
+                                <label className="text-[9px] text-gray-500">Header BG</label>
+                                <input
+                                  type="color"
+                                  value={tableStyle.headerBg}
+                                  onChange={(e) => setTableStyle({ ...tableStyle, headerBg: e.target.value })}
+                                  className="w-full h-5 rounded cursor-pointer"
+                                  title="Header Background Color"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[9px] text-gray-500">Header Text</label>
+                                <input
+                                  type="color"
+                                  value={tableStyle.headerText}
+                                  onChange={(e) => setTableStyle({ ...tableStyle, headerText: e.target.value })}
+                                  className="w-full h-5 rounded cursor-pointer"
+                                  title="Header Text Color"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Row Colors */}
+                            <div className="grid grid-cols-2 gap-1 mb-2">
+                              <div>
+                                <label className="text-[9px] text-gray-500">Row BG</label>
+                                <input
+                                  type="color"
+                                  value={tableStyle.rowBg}
+                                  onChange={(e) => setTableStyle({ ...tableStyle, rowBg: e.target.value })}
+                                  className="w-full h-5 rounded cursor-pointer"
+                                  title="Row Background Color"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[9px] text-gray-500">Alt Row BG</label>
+                                <input
+                                  type="color"
+                                  value={tableStyle.rowAltBg}
+                                  onChange={(e) => setTableStyle({ ...tableStyle, rowAltBg: e.target.value })}
+                                  className="w-full h-5 rounded cursor-pointer"
+                                  title="Alternate Row Background Color"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Text & Border */}
+                            <div className="grid grid-cols-2 gap-1 mb-2">
+                              <div>
+                                <label className="text-[9px] text-gray-500">Row Text</label>
+                                <input
+                                  type="color"
+                                  value={tableStyle.rowText}
+                                  onChange={(e) => setTableStyle({ ...tableStyle, rowText: e.target.value })}
+                                  className="w-full h-5 rounded cursor-pointer"
+                                  title="Row Text Color"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[9px] text-gray-500">Border</label>
+                                <input
+                                  type="color"
+                                  value={tableStyle.borderColor}
+                                  onChange={(e) => setTableStyle({ ...tableStyle, borderColor: e.target.value })}
+                                  className="w-full h-5 rounded cursor-pointer"
+                                  title="Border Color"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Font Size */}
+                            <div className="grid grid-cols-2 gap-1 mb-2">
+                              <div>
+                                <label className="text-[9px] text-gray-500">Header Size</label>
+                                <input
+                                  type="number"
+                                  value={tableStyle.headerFontSize}
+                                  onChange={(e) => setTableStyle({ ...tableStyle, headerFontSize: Number(e.target.value) })}
+                                  className="w-full px-1 py-0.5 bg-gray-700 border border-gray-600 rounded text-white text-[10px]"
+                                  min="8"
+                                  max="24"
+                                  title="Header Font Size"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[9px] text-gray-500">Row Size</label>
+                                <input
+                                  type="number"
+                                  value={tableStyle.fontSize}
+                                  onChange={(e) => setTableStyle({ ...tableStyle, fontSize: Number(e.target.value) })}
+                                  className="w-full px-1 py-0.5 bg-gray-700 border border-gray-600 rounded text-white text-[10px]"
+                                  min="8"
+                                  max="24"
+                                  title="Row Font Size"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Options */}
+                            <div className="flex items-center gap-3">
+                              <label className="flex items-center gap-1 text-[10px] text-gray-300">
+                                <input
+                                  type="checkbox"
+                                  checked={tableStyle.showBorder}
+                                  onChange={(e) => setTableStyle({ ...tableStyle, showBorder: e.target.checked })}
+                                  className="w-3 h-3"
+                                />
+                                Border
+                              </label>
+                              <label className="flex items-center gap-1 text-[10px] text-gray-300">
+                                <input
+                                  type="checkbox"
+                                  checked={tableStyle.stripedRows}
+                                  onChange={(e) => setTableStyle({ ...tableStyle, stripedRows: e.target.checked })}
+                                  className="w-3 h-3"
+                                />
+                                Striped
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               ) : modalTab === 'byField' ? (
                 <div className="flex gap-0 h-[calc(80vh-150px)]">
                   {/* Field Selection List */}
@@ -2319,6 +2997,398 @@ export default function BottomPanel({
                       <div className="flex items-center justify-between">
                         <span className="text-white text-sm font-medium truncate">{component.name}</span>
                         <span className="text-gray-500 text-xs">{component.blocks.length} blocks</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tables Modal - For adding table components from Tools tab */}
+      {showTablesModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowTablesModal(false)}>
+          <div
+            className="bg-gray-800 border border-gray-700 rounded-lg shadow-xl max-w-2xl max-h-[70vh] w-full mx-4 overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-700 flex-shrink-0">
+              <h3 className="text-white font-medium text-sm flex items-center gap-2">
+                <Table size={16} className="text-green-400" /> Component Tables
+              </h3>
+              <button
+                onClick={() => setShowTablesModal(false)}
+                className="text-gray-400 hover:text-white p-1"
+                title="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="overflow-auto flex-1 p-4 dark-scrollbar">
+              {savedTables.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Table size={48} className="mx-auto mb-3 opacity-50" />
+                  <p className="text-sm">No tables saved yet</p>
+                  <p className="text-xs mt-1">Create tables from the API Sync tab (Table mode)</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {savedTables.map((table) => (
+                    <div
+                      key={table.id}
+                      className="bg-gray-900 border border-gray-700 rounded-lg p-3 hover:border-green-500 cursor-pointer transition-colors group"
+                      onClick={() => {
+                        if (onAddComponent) {
+                          // Get table style with defaults
+                          const tStyle = table.style || {
+                            headerBg: '#374151',
+                            headerText: '#ffffff',
+                            rowBg: '#1f2937',
+                            rowAltBg: '#111827',
+                            rowText: '#e5e7eb',
+                            borderColor: '#4b5563',
+                            fontSize: 12,
+                            headerFontSize: 12,
+                            showBorder: true,
+                            stripedRows: true,
+                          };
+
+                          // Create table component and add to canvas
+                          const tableBlock: Block = {
+                            id: `table-${Date.now()}`,
+                            type: 'table',
+                            position: { x: 50, y: 50 },
+                            size: { width: Math.max(400, table.columns.filter(c => c.enabled).reduce((sum, c) => sum + c.width, 0) + 20), height: 300 },
+                            variableKey: JSON.stringify({
+                              columns: table.columns.filter(c => c.enabled),
+                              arrayField: table.arrayField || '',
+                              style: tStyle
+                            }),
+                            label: table.name,
+                            style: {
+                              backgroundColor: tStyle.rowBg,
+                              textColor: tStyle.rowText,
+                              fontSize: tStyle.fontSize,
+                              fontWeight: 'normal',
+                              fontFamily: 'Inter',
+                              textAlign: 'left',
+                              borderRadius: 4,
+                              padding: 0,
+                              borderWidth: tStyle.showBorder ? 1 : 0,
+                              borderColor: tStyle.borderColor
+                            },
+                            content: 'table'
+                          };
+
+                          const tableComponent: ComponentConfig = {
+                            id: `table-component-${Date.now()}`,
+                            name: table.name,
+                            blocks: [tableBlock],
+                            size: tableBlock.size,
+                            arrayField: table.arrayField,
+                            dataIndex: 0,
+                            createdAt: Date.now(),
+                            updatedAt: Date.now()
+                          };
+                          onAddComponent(tableComponent);
+                        }
+                        setShowTablesModal(false);
+                      }}
+                    >
+                      {/* Table Preview */}
+                      <div className="bg-gray-950 border border-gray-700 rounded h-20 mb-2 overflow-hidden">
+                        <div className="h-full flex flex-col">
+                          {/* Mini Header */}
+                          <div
+                            className="flex text-[8px] font-medium px-1 py-0.5"
+                            style={{ backgroundColor: table.style?.headerBg || '#374151', color: table.style?.headerText || '#ffffff' }}
+                          >
+                            {table.columns.filter(c => c.enabled).slice(0, 4).map((col, idx) => (
+                              <div key={idx} className="flex-1 truncate">{col.header}</div>
+                            ))}
+                            {table.columns.filter(c => c.enabled).length > 4 && (
+                              <div className="text-gray-400">+{table.columns.filter(c => c.enabled).length - 4}</div>
+                            )}
+                          </div>
+                          {/* Mini Rows */}
+                          {[0, 1, 2].map((rowIdx) => (
+                            <div
+                              key={rowIdx}
+                              className="flex text-[7px] px-1 py-0.5 border-t"
+                              style={{
+                                backgroundColor: (table.style?.stripedRows && rowIdx % 2 === 1) ? (table.style?.rowAltBg || '#111827') : (table.style?.rowBg || '#1f2937'),
+                                color: table.style?.rowText || '#e5e7eb',
+                                borderColor: table.style?.borderColor || '#4b5563'
+                              }}
+                            >
+                              {table.columns.filter(c => c.enabled).slice(0, 4).map((col, idx) => (
+                                <div key={idx} className="flex-1 truncate">---</div>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      {/* Table Info */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-white text-sm font-medium truncate">{table.name}</span>
+                        <span className="text-gray-500 text-xs">{table.columns.filter(c => c.enabled).length} cols</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* API Config Modal */}
+      {showApiConfigModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-lg border border-gray-700 w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-700">
+              <div className="flex items-center gap-2">
+                <Globe size={20} className="text-blue-400" />
+                <h2 className="text-lg font-semibold text-white">API Configuration</h2>
+              </div>
+              <button
+                onClick={() => setShowApiConfigModal(false)}
+                className="p-1 text-gray-400 hover:text-white hover:bg-gray-700 rounded"
+                title="Close"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* Endpoint */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-300">
+                  API Endpoint
+                </label>
+                <input
+                  type="text"
+                  value={apiEndpoint}
+                  onChange={(e) => setApiEndpoint(e.target.value)}
+                  placeholder="http://example.com/api/endpoint"
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:border-blue-500 focus:outline-none"
+                />
+                <p className="text-xs text-gray-500">Base URL without query parameters</p>
+              </div>
+
+              {/* Parameters */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium text-gray-300">
+                    Query Parameters
+                  </label>
+                  <button
+                    onClick={addApiParam}
+                    className="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 flex items-center gap-1"
+                  >
+                    <Plus size={12} />
+                    Add
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {apiParams.map((param, index) => (
+                    <div key={index} className="flex items-center gap-2 p-2 bg-gray-800 rounded-lg">
+                      {/* Enable/Disable Checkbox */}
+                      <input
+                        type="checkbox"
+                        checked={param.enabled}
+                        onChange={(e) => updateApiParam(index, 'enabled', e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-blue-500"
+                        title="Enable/Disable this parameter"
+                      />
+
+                      {/* Key */}
+                      <input
+                        type="text"
+                        value={param.key}
+                        onChange={(e) => updateApiParam(index, 'key', e.target.value)}
+                        placeholder="Parameter name"
+                        className={`flex-1 px-2 py-1 bg-gray-700 border border-gray-600 rounded text-sm focus:border-blue-500 focus:outline-none ${param.enabled ? 'text-white' : 'text-gray-500'}`}
+                        disabled={!param.enabled}
+                      />
+
+                      <span className="text-gray-500">=</span>
+
+                      {/* Value */}
+                      <input
+                        type="text"
+                        value={param.value}
+                        onChange={(e) => updateApiParam(index, 'value', e.target.value)}
+                        placeholder="Value"
+                        className={`flex-1 px-2 py-1 bg-gray-700 border border-gray-600 rounded text-sm focus:border-blue-500 focus:outline-none ${param.enabled ? 'text-yellow-300' : 'text-gray-500'}`}
+                        disabled={!param.enabled}
+                      />
+
+                      {/* Remove Button */}
+                      <button
+                        onClick={() => removeApiParam(index)}
+                        className="p-1 text-gray-400 hover:text-red-400 hover:bg-gray-600 rounded"
+                        title="Remove parameter"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ))}
+
+                  {apiParams.length === 0 && (
+                    <div className="text-center py-4 text-gray-500 text-sm">
+                      No parameters. Click &quot;Add&quot; to add query parameters.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Preview */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-300">
+                  Preview URL
+                </label>
+                <div className="p-3 bg-gray-800 border border-gray-700 rounded-lg">
+                  <code className="text-xs text-green-400 break-all">
+                    {buildApiUrl(apiEndpoint, apiParams) || 'No URL configured'}
+                  </code>
+                </div>
+              </div>
+
+              {/* Quick Templates */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-300">
+                  Quick Value Templates
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => {
+                      const today = new Date().toISOString().split('T')[0];
+                      const emptyIndex = apiParams.findIndex(p => !p.value);
+                      if (emptyIndex >= 0) {
+                        updateApiParam(emptyIndex, 'value', `${today} 00:00:00`);
+                      }
+                    }}
+                    className="px-2 py-1 bg-gray-700 text-gray-300 rounded text-xs hover:bg-gray-600"
+                    title="Insert today's date with start time"
+                  >
+                    Today Start
+                  </button>
+                  <button
+                    onClick={() => {
+                      const today = new Date().toISOString().split('T')[0];
+                      const emptyIndex = apiParams.findIndex(p => !p.value);
+                      if (emptyIndex >= 0) {
+                        updateApiParam(emptyIndex, 'value', `${today} 23:59:59`);
+                      }
+                    }}
+                    className="px-2 py-1 bg-gray-700 text-gray-300 rounded text-xs hover:bg-gray-600"
+                    title="Insert today's date with end time"
+                  >
+                    Today End
+                  </button>
+                  <button
+                    onClick={() => {
+                      const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+                      const emptyIndex = apiParams.findIndex(p => !p.value);
+                      if (emptyIndex >= 0) {
+                        updateApiParam(emptyIndex, 'value', now);
+                      }
+                    }}
+                    className="px-2 py-1 bg-gray-700 text-gray-300 rounded text-xs hover:bg-gray-600"
+                    title="Insert current datetime"
+                  >
+                    Now
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500">Click to insert value into an empty parameter field</p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-700">
+              <button
+                onClick={() => setShowApiConfigModal(false)}
+                className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg text-sm hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={applyApiConfig}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 flex items-center gap-2"
+              >
+                <Save size={16} />
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Load Table Modal */}
+      {showLoadTableModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-lg border border-gray-700 w-full max-w-md max-h-[60vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-gray-700">
+              <div className="flex items-center gap-2">
+                <Table size={20} className="text-purple-400" />
+                <h2 className="text-lg font-semibold text-white">Load Table</h2>
+              </div>
+              <button
+                onClick={() => setShowLoadTableModal(false)}
+                className="p-1 text-gray-400 hover:text-white hover:bg-gray-700 rounded"
+                title="Close"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              {savedTables.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Table size={32} className="mx-auto mb-2 opacity-50" />
+                  <div className="text-sm">No saved tables</div>
+                  <div className="text-xs mt-1">Create and save a table first</div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {savedTables.map((table) => (
+                    <div
+                      key={table.id}
+                      className="p-3 bg-gray-800 rounded-lg border border-gray-700 hover:border-purple-500 cursor-pointer transition-colors"
+                      onClick={() => {
+                        setTableName(table.name);
+                        setTableColumns(table.columns);
+                        setTableStyle(table.style);
+                        setTableArrayField(table.arrayField || null);
+                        setEditingTableId(table.id);
+                        setShowLoadTableModal(false);
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-white font-medium">{table.name}</div>
+                          <div className="text-xs text-gray-500">{table.columns.length} columns</div>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm(`Delete table "${table.name}"?`)) {
+                              setSavedTables(prev => prev.filter(t => t.id !== table.id));
+                            }
+                          }}
+                          className="p-1 text-gray-400 hover:text-red-400"
+                          title="Delete Table"
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </div>
                     </div>
                   ))}

@@ -1,0 +1,208 @@
+{
+  "id": "dashboard-1",
+  "name": "PaeTest",
+  "backgroundImage": "",
+  "canvasSize": {
+    "width": 1920,
+    "height": 1080
+  },
+  "blocks": [],
+  "apiConfig": {
+    "url": "http://10.35.10.47:2007/api/Production/TrackTimeSummary?Plant=9773&StartTime=2025-12-04%2000%3A00%3A00&EndTime=2025-12-04%2023%3A59%3A59",
+    "method": "GET",
+    "headers": {},
+    "refreshInterval": 5
+  },
+  "groups": [
+    {
+      "id": "component-1764736076825",
+      "name": "11000286",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764736211706",
+      "name": "11000286",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764736250594",
+      "name": "11000286",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764736297433",
+      "name": "11000286",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764736570601",
+      "name": "New Component",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764737041641",
+      "name": "New Component",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764737060153",
+      "name": "New Component",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764737100956",
+      "name": "11000286",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764737209905",
+      "name": "New Component",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764737501114",
+      "name": "New Component",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764737829320",
+      "name": "New Component",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764740779089",
+      "name": "New Component",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764742568405",
+      "name": "New Component",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764742766748",
+      "name": "New Component",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764742875189",
+      "name": "New Component",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764744302710",
+      "name": "New Component",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764744323580",
+      "name": "หๆไำๆไำๆไำ",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764744417973",
+      "name": "หๆไำๆไำๆไำ",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764745917878",
+      "name": "Component_1",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764746415199",
+      "name": "หๆไำๆไำๆไำ",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764746479977",
+      "name": "หๆไำๆไำๆไำ",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764746588956",
+      "name": "Online",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764746611614",
+      "name": "Online",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764746647886",
+      "name": "Online",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764746854601",
+      "name": "Online",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764749195297",
+      "name": "New Component",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764749236120",
+      "name": "New Component",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764750159496",
+      "name": "New Component",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764750227032",
+      "name": "New Component",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764750299976",
+      "name": "New Component",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764750422832",
+      "name": "Station_2",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764750447607",
+      "name": "Station_2",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764750886488",
+      "name": "Station_2",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764750894640",
+      "name": "Online",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764750897575",
+      "name": "Online",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764752471402",
+      "name": "Online",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764752482519",
+      "name": "Station_2",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764752497657",
+      "name": "Station_2",
+      "isExpanded": true
+    }
+  ]
+}

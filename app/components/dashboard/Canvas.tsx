@@ -31,12 +31,12 @@ interface CanvasProps {
   onUngroupBlocks: (groupId: string) => void;
   onRenameGroup: (groupId: string, newName: string) => void;
   onDeleteGroup: (groupId: string) => void;
-  apiData: Record<string, unknown> | null;
+  apiData: Record<string, unknown> | unknown[] | null;
   showLiveData?: boolean; // Toggle to show real data or variable names
 }
 
 // Helper to get value from nested object by path (supports bracket notation like data[0].field or [0].field)
-function getValueByPath(obj: Record<string, unknown>, path: string): unknown {
+function getValueByPath(obj: Record<string, unknown> | unknown[], path: string): unknown {
   if (!path || !obj) return undefined;
 
   // Convert bracket notation to dot notation: data[0].field -> data.0.field, [0].field -> 0.field
@@ -420,6 +420,8 @@ export default function Canvas({
               selectedBlockIds={selectedBlockIds}
               allBlocks={blocks}
               onMultiBlocksUpdate={onMultiBlocksUpdate}
+              apiData={apiData}
+              showLiveData={showLiveData}
             />
           ))}
 

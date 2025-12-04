@@ -1,15 +1,19 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { readdir, readFile } from 'fs/promises';
 import path from 'path';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const componentsDir = path.join(process.cwd(), 'config', 'components');
+    const { searchParams } = new URL(request.url);
+    const type = searchParams.get('type'); // 'table' for tables, null/undefined for components
 
-    // Try to read the components directory
+    const folderName = type === 'table' ? 'componentTable' : 'components';
+    const targetDir = path.join(process.cwd(), 'config', folderName);
+
+    // Try to read the directory
     let files: string[] = [];
     try {
-      files = await readdir(componentsDir);
+      files = await readdir(targetDir);
     } catch {
       // Directory doesn't exist yet, return empty array
       return NextResponse.json({
@@ -23,13 +27,13 @@ export async function GET() {
       files
         .filter((file) => file.endsWith('.json'))
         .map(async (file) => {
-          const filePath = path.join(componentsDir, file);
+          const filePath = path.join(targetDir, file);
           try {
             const content = await readFile(filePath, 'utf-8');
             const config = JSON.parse(content);
             return {
               name: file.replace('.json', ''),
-              path: `/config/components/${file}`,
+              path: `/config/${folderName}/${file}`,
               config,
             };
           } catch {

@@ -6,11 +6,49 @@
     "width": 1920,
     "height": 1080
   },
-  "blocks": [],
+  "blocks": [
+    {
+      "id": "block-1764827409566-xlh7hd524",
+      "type": "table",
+      "position": {
+        "x": 2,
+        "y": 0
+      },
+      "size": {
+        "width": 605.8548278808594,
+        "height": 573.1307373046875
+      },
+      "variableKey": "{\"columns\":[{\"field\":\"stationName\",\"header\":\"StationName\",\"width\":100,\"enabled\":true},{\"field\":\"count_DownTime_YES\",\"header\":\"Count_DownTime_YES\",\"width\":100,\"enabled\":true},{\"field\":\"count_DownTime_NO\",\"header\":\"Count_DownTime_NO\",\"width\":100,\"enabled\":true},{\"field\":\"suM_TimeDiff_Minutes\",\"header\":\"suM_TimeDiff_Minutes\",\"width\":100,\"enabled\":true}],\"arrayField\":\"__ROOT_ARRAY__\",\"style\":{\"headerBg\":\"#374151\",\"headerText\":\"#ffffff\",\"rowBg\":\"#1f2937\",\"rowAltBg\":\"#111827\",\"rowText\":\"#e5e7eb\",\"borderColor\":\"#4b5563\",\"fontSize\":11,\"headerFontSize\":12,\"showBorder\":false,\"stripedRows\":true}}",
+      "label": "123Test",
+      "style": {
+        "backgroundColor": "#1f2937",
+        "textColor": "#2262e2",
+        "fontSize": 11,
+        "fontWeight": "normal",
+        "fontFamily": "Inter",
+        "textAlign": "left",
+        "borderRadius": 4,
+        "padding": 0,
+        "borderWidth": 0,
+        "borderColor": "#4b5563"
+      },
+      "content": "table",
+      "groupId": "component-1764827409566",
+      "sourceComponentId": "table-component-1764827409566",
+      "sourceBlockId": "table-1764827409566"
+    }
+  ],
   "apiConfig": {
-    "url": "",
+    "url": "http://10.35.10.47:2007/api/Production/TrackTimeSummary?Plant=9771&StartTime=2025-12-04%2000%3A00%3A00&EndTime=2025-12-04%2023%3A59%3A59",
     "method": "GET",
     "headers": {},
     "refreshInterval": 0
-  }
+  },
+  "groups": [
+    {
+      "id": "component-1764827409566",
+      "name": "123Test",
+      "isExpanded": true
+    }
+  ]
 }

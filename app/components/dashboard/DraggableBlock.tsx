@@ -27,6 +27,9 @@ interface DraggableBlockProps {
   selectedBlockIds?: string[];
   allBlocks?: Block[];
   onMultiBlocksUpdate?: (blocks: Block[]) => void;
+  // API data for table rendering
+  apiData?: Record<string, unknown> | unknown[] | null;
+  showLiveData?: boolean;
 }
 
 export default function DraggableBlock({
@@ -41,11 +44,21 @@ export default function DraggableBlock({
   selectedBlockIds = [],
   allBlocks = [],
   onMultiBlocksUpdate,
+  apiData,
+  showLiveData = false,
 }: DraggableBlockProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const blockRef = useRef<HTMLDivElement>(null);
+
+  // Store initial size and mouse position for resize
+  const resizeStartRef = useRef({
+    mouseX: 0,
+    mouseY: 0,
+    width: 0,
+    height: 0
+  });
 
   const getCanvasOffset = () => {
     if (canvasRef?.current) {
@@ -73,6 +86,15 @@ export default function DraggableBlock({
     if (!isEditMode) return;
     e.stopPropagation();
     e.preventDefault();
+
+    // Store initial values when resize starts
+    resizeStartRef.current = {
+      mouseX: e.clientX,
+      mouseY: e.clientY,
+      width: block.size.width,
+      height: block.size.height,
+    };
+
     setIsResizing(true);
   };
 
@@ -115,13 +137,16 @@ export default function DraggableBlock({
             },
           });
         }
-      } else if (isResizing && blockRef.current) {
-        const rect = blockRef.current.getBoundingClientRect();
+      } else if (isResizing) {
+        // Calculate size based on delta from start position
+        const deltaX = e.clientX - resizeStartRef.current.mouseX;
+        const deltaY = e.clientY - resizeStartRef.current.mouseY;
+
         onUpdate({
           ...block,
           size: {
-            width: Math.max(50, e.clientX - rect.left),
-            height: Math.max(30, e.clientY - rect.top),
+            width: Math.max(50, resizeStartRef.current.width + deltaX),
+            height: Math.max(30, resizeStartRef.current.height + deltaY),
           },
         });
       }
@@ -204,14 +229,198 @@ export default function DraggableBlock({
       )}
 
       {/* Show bound variable key in edit mode */}
-      {isEditMode && block.variableKey && (
+      {isEditMode && block.variableKey && block.type !== 'table' && (
         <div className="absolute top-1 right-1 text-[10px] text-blue-400 bg-blue-900/50 px-1 rounded">
           {block.variableKey}
         </div>
       )}
 
-      {/* Display bound value or label */}
-      {boundValue !== undefined ? (
+      {/* Table Block Rendering */}
+      {block.type === 'table' && block.content === 'table' && (() => {
+        try {
+          // Handle case where variableKey might be an object already or a JSON string
+          let tableConfig: { columns?: { field: string; header: string; width: number; enabled: boolean }[]; arrayField?: string; style?: Record<string, unknown> };
+
+          if (typeof block.variableKey === 'string' && block.variableKey.startsWith('{')) {
+            tableConfig = JSON.parse(block.variableKey);
+          } else if (typeof block.variableKey === 'object' && block.variableKey !== null) {
+            tableConfig = block.variableKey as typeof tableConfig;
+          } else {
+            // No valid config, show placeholder
+            return (
+              <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
+                <div className="text-center">
+                  <Table size={24} className="mx-auto mb-1 opacity-50" />
+                  <div>{block.label || 'Table'}</div>
+                  <div className="text-xs text-gray-500">No config</div>
+                </div>
+              </div>
+            );
+          }
+
+          const { columns = [], arrayField = '', style: tStyle = {} } = tableConfig;
+
+          const tableStyle = tStyle as {
+            fontSize?: number;
+            headerBg?: string;
+            headerText?: string;
+            headerFontSize?: number;
+            showBorder?: boolean;
+            borderColor?: string;
+            stripedRows?: boolean;
+            rowAltBg?: string;
+            rowBg?: string;
+            rowText?: string;
+          };
+
+          // Get data array from apiData
+          let dataArray: Record<string, unknown>[] = [];
+          if (apiData && showLiveData) {
+            if (arrayField === '__ROOT_ARRAY__' && Array.isArray(apiData)) {
+              dataArray = apiData as unknown as Record<string, unknown>[];
+            } else if (arrayField && !Array.isArray(apiData) && (apiData as Record<string, unknown>)[arrayField]) {
+              dataArray = (apiData as Record<string, unknown>)[arrayField] as Record<string, unknown>[];
+            }
+          }
+
+          // Filter enabled columns, or use all if none have enabled flag
+          const enabledColumns = columns.filter((c: { enabled?: boolean }) => c.enabled !== false);
+
+          // Calculate dynamic font size based on block size and content
+          const numColumns = enabledColumns.length || 1;
+          const numRows = Math.max(dataArray.length, 3); // At least 3 rows for preview
+
+          // Base calculations
+          const baseFontSize = tableStyle.fontSize || 12;
+          const baseHeaderFontSize = tableStyle.headerFontSize || 12;
+
+          // Calculate available space per cell
+          const availableWidth = block.size.width / numColumns;
+          const availableHeight = block.size.height / (numRows + 1); // +1 for header
+
+          // Scale factor based on available space (smaller of width or height constraint)
+          const widthScale = Math.min(1.5, Math.max(0.5, availableWidth / 80)); // 80px is ideal column width
+          const heightScale = Math.min(1.5, Math.max(0.5, availableHeight / 25)); // 25px is ideal row height
+          const scaleFactor = Math.min(widthScale, heightScale);
+
+          const scaledFontSize = Math.max(8, Math.min(24, Math.round(baseFontSize * scaleFactor)));
+          const scaledHeaderFontSize = Math.max(8, Math.min(24, Math.round(baseHeaderFontSize * scaleFactor)));
+          const scaledPadding = Math.max(2, Math.round(4 * scaleFactor));
+
+          // If no columns, show placeholder
+          if (enabledColumns.length === 0) {
+            return (
+              <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
+                <div className="text-center">
+                  <Table size={24} className="mx-auto mb-1 opacity-50" />
+                  <div>{block.label || 'Table'}</div>
+                  <div className="text-xs text-gray-500">No columns defined</div>
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div className="w-full h-full overflow-hidden">
+              <table className="w-full h-full border-collapse text-left table-fixed" style={{ fontSize: scaledFontSize }}>
+                <thead>
+                  <tr style={{ backgroundColor: tableStyle.headerBg || '#374151' }}>
+                    {enabledColumns.map((col: { field: string; header: string; width: number }, idx: number) => (
+                      <th
+                        key={idx}
+                        className="font-medium break-words align-top"
+                        style={{
+                          color: tableStyle.headerText || '#ffffff',
+                          fontSize: scaledHeaderFontSize,
+                          padding: scaledPadding,
+                          borderWidth: tableStyle.showBorder ? 1 : 0,
+                          borderColor: tableStyle.borderColor || '#4b5563',
+                          borderStyle: 'solid',
+                          wordBreak: 'break-word'
+                        }}
+                      >
+                        {col.header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {dataArray.length > 0 ? (
+                    dataArray.map((row, rowIdx) => (
+                      <tr
+                        key={rowIdx}
+                        style={{
+                          backgroundColor: tableStyle.stripedRows && rowIdx % 2 === 1
+                            ? (tableStyle.rowAltBg || '#111827')
+                            : (tableStyle.rowBg || '#1f2937')
+                        }}
+                      >
+                        {enabledColumns.map((col: { field: string; header: string; width: number }, colIdx: number) => (
+                          <td
+                            key={colIdx}
+                            className="break-words align-top"
+                            style={{
+                              color: tableStyle.rowText || '#e5e7eb',
+                              padding: scaledPadding,
+                              borderWidth: tableStyle.showBorder ? 1 : 0,
+                              borderColor: tableStyle.borderColor || '#4b5563',
+                              borderStyle: 'solid',
+                              wordBreak: 'break-word'
+                            }}
+                          >
+                            {String(row[col.field] ?? '-')}
+                          </td>
+                        ))}
+                      </tr>
+                    ))
+                  ) : (
+                    // Show empty rows when no data or in edit mode
+                    [0, 1, 2].map((rowIdx) => (
+                      <tr
+                        key={rowIdx}
+                        style={{
+                          backgroundColor: tableStyle.stripedRows && rowIdx % 2 === 1
+                            ? (tableStyle.rowAltBg || '#111827')
+                            : (tableStyle.rowBg || '#1f2937')
+                        }}
+                      >
+                        {enabledColumns.map((col: { field: string; header: string; width: number }, colIdx: number) => (
+                          <td
+                            key={colIdx}
+                            className="break-words align-top"
+                            style={{
+                              color: tableStyle.rowText || '#e5e7eb',
+                              padding: scaledPadding,
+                              borderWidth: tableStyle.showBorder ? 1 : 0,
+                              borderColor: tableStyle.borderColor || '#4b5563',
+                              borderStyle: 'solid',
+                              wordBreak: 'break-word'
+                            }}
+                          >
+                            {isEditMode ? `{${col.field}}` : '-'}
+                          </td>
+                        ))}
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+              {isEditMode && (
+                <div className="absolute bottom-1 right-6 text-[9px] text-purple-400 bg-purple-900/50 px-1 rounded">
+                  {block.label}
+                </div>
+              )}
+            </div>
+          );
+        } catch {
+          return (
+            <div className="text-xs text-red-400">Invalid table config</div>
+          );
+        }
+      })()}
+
+      {/* Display bound value or label (non-table blocks) */}
+      {block.type !== 'table' && boundValue !== undefined ? (
         <div
           className="truncate w-full font-medium"
           style={{
@@ -221,7 +430,7 @@ export default function DraggableBlock({
         >
           {boundValue}
         </div>
-      ) : block.label && (
+      ) : block.type !== 'table' && block.label && (
         <div
           className="truncate w-full font-medium"
           style={{
@@ -233,8 +442,8 @@ export default function DraggableBlock({
         </div>
       )}
 
-      {/* Content placeholder for different types */}
-      {block.content && !boundValue && (
+      {/* Content placeholder for different types (non-table) */}
+      {block.type !== 'table' && block.content && !boundValue && (
         <div
           className="text-xs opacity-70 truncate w-full"
           style={{ textAlign: block.style.textAlign || 'center' }}

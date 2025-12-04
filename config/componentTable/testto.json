@@ -1,0 +1,49 @@
+{
+  "id": "table-1764830756885",
+  "name": "TESTTO",
+  "columns": [
+    {
+      "field": "id",
+      "header": "Id",
+      "width": 100,
+      "enabled": true
+    },
+    {
+      "field": "codePrivilege",
+      "header": "CodePrivilege",
+      "width": 100,
+      "enabled": true
+    },
+    {
+      "field": "privilegeName",
+      "header": "PrivilegeName",
+      "width": 100,
+      "enabled": true
+    },
+    {
+      "field": "categoryId",
+      "header": "CategoryId",
+      "width": 100,
+      "enabled": true
+    },
+    {
+      "field": "description",
+      "header": "Description",
+      "width": 100,
+      "enabled": true
+    }
+  ],
+  "style": {
+    "headerBg": "#374151",
+    "headerText": "#ffffff",
+    "rowBg": "#1f2937",
+    "rowAltBg": "#111827",
+    "rowText": "#a6a9b0",
+    "borderColor": "#4b5563",
+    "fontSize": 12,
+    "headerFontSize": 12,
+    "showBorder": true,
+    "stripedRows": true
+  },
+  "arrayField": "data"
+}

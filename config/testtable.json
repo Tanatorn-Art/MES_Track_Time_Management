@@ -1,0 +1,69 @@
+{
+  "id": "dashboard-1",
+  "name": "TestTable",
+  "backgroundImage": "",
+  "canvasSize": {
+    "width": 1920,
+    "height": 1080
+  },
+  "blocks": [
+    {
+      "id": "block-1764829993661-m6omrzuxz",
+      "type": "table",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "size": {
+        "width": 973,
+        "height": 873
+      },
+      "variableKey": "{\"columns\":[{\"field\":\"stationName\",\"header\":\"StationName\",\"width\":100,\"enabled\":true},{\"field\":\"count_DownTime_YES\",\"header\":\"Count_DownTime_YES\",\"width\":100,\"enabled\":true},{\"field\":\"count_DownTime_NO\",\"header\":\"Count_DownTime_NO\",\"width\":100,\"enabled\":true},{\"field\":\"suM_TimeDiff_Minutes\",\"header\":\"suM_TimeDiff_Minutes\",\"width\":100,\"enabled\":true}],\"arrayField\":\"__ROOT_ARRAY__\",\"style\":{\"headerBg\":\"#374151\",\"headerText\":\"#ffffff\",\"rowBg\":\"#000000\",\"rowAltBg\":\"#111827\",\"rowText\":\"#e5e7eb\",\"borderColor\":\"#4b5563\",\"fontSize\":8,\"headerFontSize\":11,\"showBorder\":true,\"stripedRows\":false}}",
+      "label": "123Test",
+      "style": {
+        "backgroundColor": "#000000",
+        "textColor": "#e5e7eb",
+        "fontSize": 8,
+        "fontWeight": "normal",
+        "fontFamily": "Inter",
+        "textAlign": "left",
+        "borderRadius": 4,
+        "padding": 0,
+        "borderWidth": 1,
+        "borderColor": "#4b5563"
+      },
+      "content": "table",
+      "groupId": "component-1764829993661",
+      "sourceComponentId": "table-1764823188843",
+      "sourceBlockId": "table-1764829993661"
+    }
+  ],
+  "apiConfig": {
+    "url": "http://10.35.10.47:2007/api/Production/TrackTimeSummary?Plant=9771&StartTime=2025-12-04%2000%3A00%3A00&EndTime=2025-12-04%2023%3A59%3A59",
+    "method": "GET",
+    "headers": {},
+    "refreshInterval": 5
+  },
+  "groups": [
+    {
+      "id": "component-1764827409566",
+      "name": "123Test",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764829792204",
+      "name": "New Table",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764829860664",
+      "name": "123Test",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764829993661",
+      "name": "123Test",
+      "isExpanded": true
+    }
+  ]
+}

@@ -5,7 +5,7 @@ import path from 'path';
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
-    const { componentName, config } = data;
+    const { componentName, config, type } = data;
 
     if (!componentName || !config) {
       return NextResponse.json(
@@ -17,22 +17,25 @@ export async function POST(request: NextRequest) {
     // Sanitize component name for filename
     const safeName = componentName.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
 
-    // Define paths - components go to config/components folder
+    // Define paths - components go to config/components folder, tables go to config/componentTable
     const configDir = path.join(process.cwd(), 'config');
-    const componentsDir = path.join(configDir, 'components');
+    const targetDir = type === 'table'
+      ? path.join(configDir, 'componentTable')
+      : path.join(configDir, 'components');
 
     // Ensure directories exist
     await mkdir(configDir, { recursive: true });
-    await mkdir(componentsDir, { recursive: true });
+    await mkdir(targetDir, { recursive: true });
 
-    // Save component as JSON
-    const componentPath = path.join(componentsDir, `${safeName}.json`);
+    // Save component/table as JSON
+    const componentPath = path.join(targetDir, `${safeName}.json`);
     await writeFile(componentPath, JSON.stringify(config, null, 2), 'utf-8');
 
+    const folderName = type === 'table' ? 'componentTable' : 'components';
     return NextResponse.json({
       success: true,
-      message: 'Component saved successfully',
-      componentPath: `/config/components/${safeName}.json`,
+      message: type === 'table' ? 'Table saved successfully' : 'Component saved successfully',
+      componentPath: `/config/${folderName}/${safeName}.json`,
       name: safeName,
     });
   } catch (error) {

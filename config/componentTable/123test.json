@@ -1,0 +1,43 @@
+{
+  "id": "table-1764823188843",
+  "name": "123Test",
+  "columns": [
+    {
+      "field": "stationName",
+      "header": "StationName",
+      "width": 100,
+      "enabled": true
+    },
+    {
+      "field": "count_DownTime_YES",
+      "header": "Count_DownTime_YES",
+      "width": 100,
+      "enabled": true
+    },
+    {
+      "field": "count_DownTime_NO",
+      "header": "Count_DownTime_NO",
+      "width": 100,
+      "enabled": true
+    },
+    {
+      "field": "suM_TimeDiff_Minutes",
+      "header": "suM_TimeDiff_Minutes",
+      "width": 100,
+      "enabled": true
+    }
+  ],
+  "style": {
+    "headerBg": "#374151",
+    "headerText": "#ffffff",
+    "rowBg": "#000000",
+    "rowAltBg": "#111827",
+    "rowText": "#e5e7eb",
+    "borderColor": "#4b5563",
+    "fontSize": 8,
+    "headerFontSize": 11,
+    "showBorder": true,
+    "stripedRows": false
+  },
+  "arrayField": "__ROOT_ARRAY__"
+}

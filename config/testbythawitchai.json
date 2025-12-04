@@ -1,0 +1,143 @@
+{
+  "id": "dashboard-1",
+  "name": "TESTBYTHAWITCHAI",
+  "backgroundImage": "",
+  "canvasSize": {
+    "width": 1920,
+    "height": 1080
+  },
+  "blocks": [
+    {
+      "id": "block-1764830558116-wq0w4oj83",
+      "type": "text",
+      "position": {
+        "x": 775,
+        "y": 371
+      },
+      "size": {
+        "width": 120,
+        "height": 24
+      },
+      "variableKey": "data[0].id",
+      "label": "data.id",
+      "style": {
+        "backgroundColor": "transparent",
+        "textColor": "#60a5fa",
+        "fontSize": 14,
+        "fontWeight": "normal",
+        "fontFamily": "Arial",
+        "textAlign": "left",
+        "borderRadius": 0,
+        "padding": 4,
+        "borderWidth": 0,
+        "borderColor": "transparent"
+      },
+      "groupId": "component-1764830558116",
+      "sourceComponentId": "component-1764830543885",
+      "sourceBlockId": "comp-block-1764830486596-8doh8r9dh"
+    },
+    {
+      "id": "block-1764830558116-ey2wo0rsa",
+      "type": "text",
+      "position": {
+        "x": 850,
+        "y": 372
+      },
+      "size": {
+        "width": 120,
+        "height": 24
+      },
+      "variableKey": "data[0].codePrivilege",
+      "label": "data.codePrivilege",
+      "style": {
+        "backgroundColor": "transparent",
+        "textColor": "#60a5fa",
+        "fontSize": 14,
+        "fontWeight": "normal",
+        "fontFamily": "Arial",
+        "textAlign": "left",
+        "borderRadius": 0,
+        "padding": 4,
+        "borderWidth": 0,
+        "borderColor": "transparent"
+      },
+      "groupId": "component-1764830558116",
+      "sourceComponentId": "component-1764830543885",
+      "sourceBlockId": "comp-block-1764830525829-6u84wjntp"
+    },
+    {
+      "id": "block-1764830773469-pe8agwpwz",
+      "type": "table",
+      "position": {
+        "x": 549,
+        "y": 177
+      },
+      "size": {
+        "width": 900,
+        "height": 514
+      },
+      "variableKey": "{\"columns\":[{\"field\":\"id\",\"header\":\"Id\",\"width\":100,\"enabled\":true},{\"field\":\"codePrivilege\",\"header\":\"CodePrivilege\",\"width\":100,\"enabled\":true},{\"field\":\"privilegeName\",\"header\":\"PrivilegeName\",\"width\":100,\"enabled\":true},{\"field\":\"categoryId\",\"header\":\"CategoryId\",\"width\":100,\"enabled\":true},{\"field\":\"description\",\"header\":\"Description\",\"width\":100,\"enabled\":true}],\"arrayField\":\"data\",\"style\":{\"headerBg\":\"#374151\",\"headerText\":\"#ffffff\",\"rowBg\":\"#1f2937\",\"rowAltBg\":\"#111827\",\"rowText\":\"#a6a9b0\",\"borderColor\":\"#4b5563\",\"fontSize\":12,\"headerFontSize\":12,\"showBorder\":true,\"stripedRows\":true}}",
+      "label": "TESTTO",
+      "style": {
+        "backgroundColor": "#1f2937",
+        "textColor": "#a6a9b0",
+        "fontSize": 12,
+        "fontWeight": "normal",
+        "fontFamily": "Inter",
+        "textAlign": "left",
+        "borderRadius": 4,
+        "padding": 0,
+        "borderWidth": 1,
+        "borderColor": "#4b5563"
+      },
+      "content": "table",
+      "groupId": "component-1764830773469",
+      "sourceComponentId": "table-component-1764830773469",
+      "sourceBlockId": "table-1764830773469"
+    },
+    {
+      "id": "block-1764830940605",
+      "type": "text",
+      "position": {
+        "x": 847,
+        "y": 90
+      },
+      "size": {
+        "width": 375,
+        "height": 59
+      },
+      "variableKey": "",
+      "label": "Report_กิจกรรม",
+      "style": {
+        "backgroundColor": "transparent",
+        "textColor": "#ffffff",
+        "fontSize": 24,
+        "fontWeight": "bold",
+        "fontFamily": "Arial",
+        "textAlign": "center",
+        "borderRadius": 8,
+        "padding": 12,
+        "borderWidth": 0,
+        "borderColor": "#3b82f6"
+      }
+    }
+  ],
+  "apiConfig": {
+    "url": "http://10.35.10.47:2007/api/Privilege/getPrivilege",
+    "method": "GET",
+    "headers": {},
+    "refreshInterval": 0
+  },
+  "groups": [
+    {
+      "id": "component-1764830558116",
+      "name": "TestByThawitchai",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764830773469",
+      "name": "TESTTO",
+      "isExpanded": true
+    }
+  ]
+}

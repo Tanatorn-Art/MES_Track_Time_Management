@@ -83,7 +83,7 @@ export interface ApiVariable {
 // API Response data storage
 export interface ApiData {
   url: string;
-  data: Record<string, unknown> | null;
+  data: Record<string, unknown> | unknown[] | null;
   headers: string[];
   loading: boolean;
   error: string | null;
