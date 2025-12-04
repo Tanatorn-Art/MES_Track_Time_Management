@@ -212,7 +212,7 @@ export default function BottomPanel({
 
   // Table Component States
   const [tableName, setTableName] = useState<string>('New Table');
-  const [tableColumns, setTableColumns] = useState<{ field: string; header: string; width: number; enabled: boolean }[]>([]);
+  const [tableColumns, setTableColumns] = useState<{ field: string; header: string; width: number; enabled: boolean; headerBgColor?: string; headerTextColor?: string }[]>([]);
   const [tableStyle, setTableStyle] = useState({
     headerBg: '#374151',
     headerText: '#ffffff',
@@ -225,12 +225,20 @@ export default function BottomPanel({
     showBorder: true,
     stripedRows: true,
   });
+  // Table Sorting & Limit States
+  const [tableSortField, setTableSortField] = useState<string>('');
+  const [tableSortOrder, setTableSortOrder] = useState<'asc' | 'desc' | 'none'>('none');
+  const [tableMaxRecords, setTableMaxRecords] = useState<number>(0); // 0 = show all
+
   const [savedTables, setSavedTables] = useState<{
     id: string;
     name: string;
-    columns: { field: string; header: string; width: number; enabled: boolean }[];
+    columns: { field: string; header: string; width: number; enabled: boolean; headerBgColor?: string; headerTextColor?: string }[];
     style: typeof tableStyle;
     arrayField?: string;
+    sortField?: string;
+    sortOrder?: 'asc' | 'desc' | 'none';
+    maxRecords?: number;
   }[]>([]);
   const [editingTableId, setEditingTableId] = useState<string | null>(null);
   const [showLoadTableModal, setShowLoadTableModal] = useState(false);
@@ -709,12 +717,14 @@ export default function BottomPanel({
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.components) {
-          const components: ComponentConfig[] = [];
+          const componentsMap = new Map<string, ComponentConfig>();
 
           data.components.forEach((c: { name: string; path: string; config: ComponentConfig }) => {
             // Only load components (not tables)
-            components.push({
-              id: c.config?.id || c.name,
+            const id = c.config?.id || c.name;
+            // Use Map to automatically deduplicate by id (later entries override earlier ones)
+            componentsMap.set(id, {
+              id,
               name: c.config?.name || c.name,
               description: c.config?.description || '',
               size: c.config?.size || { width: 400, height: 300 },
@@ -727,7 +737,7 @@ export default function BottomPanel({
             });
           });
 
-          setSavedComponents(components);
+          setSavedComponents(Array.from(componentsMap.values()));
         }
       }
     } catch (error) {
@@ -744,13 +754,16 @@ export default function BottomPanel({
         if (data.success && data.components) {
           const tables: typeof savedTables = [];
 
-          data.components.forEach((c: { name: string; path: string; config: { id?: string; name?: string; columns?: typeof tableColumns; style?: typeof tableStyle; arrayField?: string } }) => {
+          data.components.forEach((c: { name: string; path: string; config: { id?: string; name?: string; columns?: typeof tableColumns; style?: typeof tableStyle; arrayField?: string; sortField?: string; sortOrder?: 'asc' | 'desc' | 'none'; maxRecords?: number } }) => {
             tables.push({
               id: c.config?.id || c.name,
               name: c.config?.name || c.name,
               columns: c.config?.columns || [],
               style: c.config?.style || tableStyle,
               arrayField: c.config?.arrayField,
+              sortField: c.config?.sortField,
+              sortOrder: c.config?.sortOrder,
+              maxRecords: c.config?.maxRecords,
             });
           });
 
@@ -1336,7 +1349,9 @@ export default function BottomPanel({
                             field: f,
                             header: f.charAt(0).toUpperCase() + f.slice(1),
                             width: 100,
-                            enabled: true
+                            enabled: true,
+                            headerBgColor: undefined,
+                            headerTextColor: undefined
                           })));
                         }
                       }}
@@ -2174,7 +2189,7 @@ export default function BottomPanel({
                                 key={field}
                                 onClick={() => {
                                   if (!isAdded) {
-                                    setTableColumns([...tableColumns, { field, header: field, width: 100, enabled: true }]);
+                                    setTableColumns([...tableColumns, { field, header: field, width: 100, enabled: true, headerBgColor: undefined, headerTextColor: undefined }]);
                                   }
                                 }}
                                 className={`flex items-center justify-between px-2 py-1 rounded text-[11px] font-mono cursor-pointer ${
@@ -2222,7 +2237,10 @@ export default function BottomPanel({
                                   variableKey: JSON.stringify({
                                     columns: tableColumns.filter(c => c.enabled),
                                     arrayField: tableArrayField || (isRootArray() ? '__ROOT_ARRAY__' : ''),
-                                    style: tableStyle
+                                    style: tableStyle,
+                                    sortField: tableSortField || undefined,
+                                    sortOrder: tableSortOrder !== 'none' ? tableSortOrder : undefined,
+                                    maxRecords: tableMaxRecords > 0 ? tableMaxRecords : undefined
                                   }),
                                   label: tableName || 'Data Table',
                                   style: {
@@ -2278,6 +2296,9 @@ export default function BottomPanel({
                                 setTableColumns([]);
                                 setEditingTableId(null);
                                 setTableArrayField(null);
+                                setTableSortField('');
+                                setTableSortOrder('none');
+                                setTableMaxRecords(0);
                               }}
                               className="px-2 py-1 bg-gray-600 text-white rounded text-xs hover:bg-gray-500 flex items-center gap-1"
                               title="Create new table"
@@ -2292,7 +2313,10 @@ export default function BottomPanel({
                                   name: tableName,
                                   columns: tableColumns,
                                   style: tableStyle,
-                                  arrayField: tableArrayField || (isRootArray() ? '__ROOT_ARRAY__' : selectedArrayField) || undefined
+                                  arrayField: tableArrayField || (isRootArray() ? '__ROOT_ARRAY__' : selectedArrayField) || undefined,
+                                  sortField: tableSortField || undefined,
+                                  sortOrder: tableSortOrder !== 'none' ? tableSortOrder : undefined,
+                                  maxRecords: tableMaxRecords > 0 ? tableMaxRecords : undefined
                                 };
 
                                 try {
@@ -2328,13 +2352,14 @@ export default function BottomPanel({
                             <div className="overflow-auto">
                               <table className="w-full border-collapse text-left" style={{ fontSize: tableStyle.fontSize }}>
                                 <thead>
-                                  <tr style={{ backgroundColor: tableStyle.headerBg }}>
+                                  <tr>
                                     {tableColumns.filter(c => c.enabled).map((col, idx) => (
                                       <th
                                         key={idx}
                                         className="px-2 py-1.5 font-medium"
                                         style={{
-                                          color: tableStyle.headerText,
+                                          backgroundColor: col.headerBgColor || tableStyle.headerBg,
+                                          color: col.headerTextColor || tableStyle.headerText,
                                           fontSize: tableStyle.headerFontSize,
                                           width: col.width,
                                           borderWidth: tableStyle.showBorder ? 1 : 0,
@@ -2350,12 +2375,43 @@ export default function BottomPanel({
                                 <tbody>
                                   {(() => {
                                     const source = tableArrayField || (isRootArray() ? '__ROOT_ARRAY__' : selectedArrayField);
-                                    const dataArray = source === '__ROOT_ARRAY__'
-                                      ? (apiData.data as unknown as unknown[])
-                                      : source
-                                        ? ((apiData.data as Record<string, unknown>)[source] as unknown[] || [])
-                                        : [];
-                                    return dataArray.slice(0, 10).map((row, rowIdx) => (
+                                    let dataArray: unknown[] = [];
+                                    if (source === '__ROOT_ARRAY__') {
+                                      const rootData = apiData.data;
+                                      dataArray = Array.isArray(rootData) ? [...rootData] : [];
+                                    } else if (source) {
+                                      const fieldData = (apiData.data as Record<string, unknown>)[source];
+                                      dataArray = Array.isArray(fieldData) ? [...fieldData] : [];
+                                    }
+
+                                    // Apply sorting
+                                    if (tableSortField && tableSortOrder !== 'none') {
+                                      dataArray.sort((a, b) => {
+                                        const aVal = (a as Record<string, unknown>)[tableSortField];
+                                        const bVal = (b as Record<string, unknown>)[tableSortField];
+
+                                        // Handle null/undefined
+                                        if (aVal == null && bVal == null) return 0;
+                                        if (aVal == null) return tableSortOrder === 'asc' ? 1 : -1;
+                                        if (bVal == null) return tableSortOrder === 'asc' ? -1 : 1;
+
+                                        // Compare values
+                                        let comparison = 0;
+                                        if (typeof aVal === 'number' && typeof bVal === 'number') {
+                                          comparison = aVal - bVal;
+                                        } else {
+                                          comparison = String(aVal).localeCompare(String(bVal));
+                                        }
+
+                                        return tableSortOrder === 'asc' ? comparison : -comparison;
+                                      });
+                                    }
+
+                                    // Apply max records limit
+                                    const displayLimit = tableMaxRecords > 0 ? Math.min(tableMaxRecords, 10) : 10;
+                                    const limitedData = dataArray.slice(0, displayLimit);
+
+                                    return limitedData.map((row, rowIdx) => (
                                       <tr
                                         key={rowIdx}
                                         style={{
@@ -2383,14 +2439,23 @@ export default function BottomPanel({
                               </table>
                               {(() => {
                                 const source = tableArrayField || (isRootArray() ? '__ROOT_ARRAY__' : selectedArrayField);
-                                const dataArray = source === '__ROOT_ARRAY__'
+                                let dataArray = source === '__ROOT_ARRAY__'
                                   ? (apiData.data as unknown as unknown[])
                                   : source
                                     ? ((apiData.data as Record<string, unknown>)[source] as unknown[] || [])
                                     : [];
-                                return dataArray.length > 10 && (
+                                const totalCount = dataArray.length;
+                                const displayLimit = tableMaxRecords > 0 ? Math.min(tableMaxRecords, 10) : 10;
+                                const showingCount = Math.min(totalCount, displayLimit);
+
+                                return totalCount > showingCount && (
                                   <div className="text-center text-xs text-gray-500 mt-2">
-                                    Showing 10 of {dataArray.length} rows
+                                    Preview: {showingCount} of {tableMaxRecords > 0 ? `${Math.min(tableMaxRecords, totalCount)} (max ${tableMaxRecords})` : totalCount} rows
+                                    {tableSortField && tableSortOrder !== 'none' && (
+                                      <span className="ml-2 text-blue-400">
+                                        (Sorted by {tableSortField} {tableSortOrder === 'asc' ? '↑' : '↓'})
+                                      </span>
+                                    )}
                                   </div>
                                 );
                               })()}
@@ -2412,53 +2477,103 @@ export default function BottomPanel({
                         <div className="p-2 space-y-3">
                           {/* Selected Columns */}
                           <div>
-                            <div className="text-[10px] text-gray-500 mb-1">Columns Order (drag to reorder):</div>
-                            <div className="space-y-1">
+                            <div className="text-[10px] text-gray-500 mb-1">Columns (Field → Display Name):</div>
+                            <div className="space-y-2">
                               {tableColumns.map((col, idx) => (
                                 <div
                                   key={idx}
-                                  className="flex items-center gap-1 p-1 bg-gray-800 rounded border border-gray-700"
+                                  className="p-1.5 bg-gray-800 rounded border border-gray-700"
                                 >
-                                  <input
-                                    type="checkbox"
-                                    checked={col.enabled}
-                                    onChange={(e) => {
-                                      const newCols = [...tableColumns];
-                                      newCols[idx].enabled = e.target.checked;
-                                      setTableColumns(newCols);
-                                    }}
-                                    className="w-3 h-3"
-                                    title="Enable column"
-                                  />
-                                  <input
-                                    type="text"
-                                    value={col.header}
-                                    onChange={(e) => {
-                                      const newCols = [...tableColumns];
-                                      newCols[idx].header = e.target.value;
-                                      setTableColumns(newCols);
-                                    }}
-                                    className="flex-1 px-1 py-0.5 bg-gray-700 border border-gray-600 rounded text-white text-[10px]"
-                                    title="Column Header"
-                                  />
-                                  <input
-                                    type="number"
-                                    value={col.width}
-                                    onChange={(e) => {
-                                      const newCols = [...tableColumns];
-                                      newCols[idx].width = Number(e.target.value);
-                                      setTableColumns(newCols);
-                                    }}
-                                    className="w-12 px-1 py-0.5 bg-gray-700 border border-gray-600 rounded text-white text-[10px]"
-                                    title="Width"
-                                  />
-                                  <button
-                                    onClick={() => setTableColumns(tableColumns.filter((_, i) => i !== idx))}
-                                    className="p-0.5 text-gray-400 hover:text-red-400"
-                                    title="Remove column"
-                                  >
-                                    <X size={12} />
-                                  </button>
+                                  {/* Row 1: Enable, Header Name, Width, Delete */}
+                                  <div className="flex items-center gap-1 mb-1">
+                                    <input
+                                      type="checkbox"
+                                      checked={col.enabled}
+                                      onChange={(e) => {
+                                        const newCols = [...tableColumns];
+                                        newCols[idx].enabled = e.target.checked;
+                                        setTableColumns(newCols);
+                                      }}
+                                      className="w-3 h-3"
+                                      title="Enable column"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={col.header}
+                                      onChange={(e) => {
+                                        const newCols = [...tableColumns];
+                                        newCols[idx].header = e.target.value;
+                                        setTableColumns(newCols);
+                                      }}
+                                      className="flex-1 px-1 py-0.5 w-10 bg-gray-700 border border-gray-600 rounded text-white text-[10px]"
+                                      placeholder="Display Name"
+                                      title="Column Display Name"
+                                    />
+                                    <input
+                                      type="number"
+                                      value={col.width}
+                                      onChange={(e) => {
+                                        const newCols = [...tableColumns];
+                                        newCols[idx].width = Number(e.target.value);
+                                        setTableColumns(newCols);
+                                      }}
+                                      className="w-12 px-1 py-0.5 bg-gray-700 border border-gray-600 rounded text-white text-[10px]"
+                                      title="Width"
+                                    />
+                                    <button
+                                      onClick={() => setTableColumns(tableColumns.filter((_, i) => i !== idx))}
+                                      className="p-0.5 text-gray-400 hover:text-red-400"
+                                      title="Remove column"
+                                    >
+                                      <X size={12} />
+                                    </button>
+                                  </div>
+                                  {/* Row 2: Field name (read-only) + Colors */}
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-[9px] text-gray-500 truncate flex-1" title={`Variable: ${col.field}`}>
+                                      📎 {col.field}
+                                    </span>
+                                    <div className="flex items-center gap-0.5">
+                                      <label className="text-[8px] text-gray-500">BG</label>
+                                      <input
+                                        type="color"
+                                        value={col.headerBgColor || tableStyle.headerBg}
+                                        onChange={(e) => {
+                                          const newCols = [...tableColumns];
+                                          newCols[idx].headerBgColor = e.target.value;
+                                          setTableColumns(newCols);
+                                        }}
+                                        className="w-5 h-4 rounded cursor-pointer border-0"
+                                        title="Column Header Background Color"
+                                      />
+                                    </div>
+                                    <div className="flex items-center gap-0.5">
+                                      <label className="text-[8px] text-gray-500">Text</label>
+                                      <input
+                                        type="color"
+                                        value={col.headerTextColor || tableStyle.headerText}
+                                        onChange={(e) => {
+                                          const newCols = [...tableColumns];
+                                          newCols[idx].headerTextColor = e.target.value;
+                                          setTableColumns(newCols);
+                                        }}
+                                        className="w-5 h-4 rounded cursor-pointer border-0"
+                                        title="Column Header Text Color"
+                                      />
+                                    </div>
+                                    <button
+                                      onClick={() => {
+                                        const newCols = [...tableColumns];
+                                        newCols[idx].headerBgColor = undefined;
+                                        newCols[idx].headerTextColor = undefined;
+                                        setTableColumns(newCols);
+                                      }}
+                                      className="p-0.5 text-gray-500 hover:text-yellow-400"
+                                      title="Reset to default colors"
+                                    >
+                                      <RotateCcw size={10} />
+                                    </button>
+                                  </div>
                                 </div>
                               ))}
                             </div>
@@ -2588,6 +2703,98 @@ export default function BottomPanel({
                                 />
                                 Striped
                               </label>
+                            </div>
+                          </div>
+
+                          {/* Data Filter & Sorting */}
+                          <div className="border-t border-gray-700 pt-2">
+                            <div className="text-[10px] text-gray-500 mb-1">Data Filter & Sorting:</div>
+
+                            {/* Sort Field */}
+                            <div className="mb-2">
+                              <label className="text-[9px] text-gray-500">Sort by Field</label>
+                              <select
+                                value={tableSortField}
+                                onChange={(e) => setTableSortField(e.target.value)}
+                                className="w-full px-1 py-0.5 bg-gray-700 border border-gray-600 rounded text-white text-[10px]"
+                                title="Field to sort by"
+                              >
+                                <option value="">-- No Sorting --</option>
+                                {tableColumns.filter(c => c.enabled).map((col) => (
+                                  <option key={col.field} value={col.field}>{col.header} ({col.field})</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            {/* Sort Order */}
+                            {tableSortField && (
+                              <div className="mb-2">
+                                <label className="text-[9px] text-gray-500">Sort Order</label>
+                                <div className="flex gap-1">
+                                  <button
+                                    onClick={() => setTableSortOrder('asc')}
+                                    className={`flex-1 px-2 py-1 rounded text-[10px] ${tableSortOrder === 'asc' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+                                    title="Ascending (smallest/oldest first)"
+                                  >
+                                    ↑ ASC (น้อย→มาก)
+                                  </button>
+                                  <button
+                                    onClick={() => setTableSortOrder('desc')}
+                                    className={`flex-1 px-2 py-1 rounded text-[10px] ${tableSortOrder === 'desc' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+                                    title="Descending (largest/newest first)"
+                                  >
+                                    ↓ DESC (มาก→น้อย)
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Max Records */}
+                            <div className="mb-2">
+                              <label className="text-[9px] text-gray-500">Max Records (0 = All)</label>
+                              <input
+                                type="number"
+                                value={tableMaxRecords}
+                                onChange={(e) => setTableMaxRecords(Math.max(0, Number(e.target.value)))}
+                                className="w-full px-1 py-0.5 bg-gray-700 border border-gray-600 rounded text-white text-[10px]"
+                                min="0"
+                                placeholder="0 = show all"
+                                title="Limit number of rows (0 = no limit)"
+                              />
+                            </div>
+
+                            {/* Quick Presets */}
+                            <div className="flex flex-wrap gap-1">
+                              <button
+                                onClick={() => { setTableMaxRecords(10); }}
+                                className="px-1.5 py-0.5 bg-gray-700 text-gray-300 rounded text-[9px] hover:bg-gray-600"
+                              >
+                                10
+                              </button>
+                              <button
+                                onClick={() => { setTableMaxRecords(25); }}
+                                className="px-1.5 py-0.5 bg-gray-700 text-gray-300 rounded text-[9px] hover:bg-gray-600"
+                              >
+                                25
+                              </button>
+                              <button
+                                onClick={() => { setTableMaxRecords(50); }}
+                                className="px-1.5 py-0.5 bg-gray-700 text-gray-300 rounded text-[9px] hover:bg-gray-600"
+                              >
+                                50
+                              </button>
+                              <button
+                                onClick={() => { setTableMaxRecords(100); }}
+                                className="px-1.5 py-0.5 bg-gray-700 text-gray-300 rounded text-[9px] hover:bg-gray-600"
+                              >
+                                100
+                              </button>
+                              <button
+                                onClick={() => { setTableMaxRecords(0); }}
+                                className="px-1.5 py-0.5 bg-gray-700 text-gray-300 rounded text-[9px] hover:bg-gray-600"
+                              >
+                                All
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -3368,6 +3575,9 @@ export default function BottomPanel({
                         setTableColumns(table.columns);
                         setTableStyle(table.style);
                         setTableArrayField(table.arrayField || null);
+                        setTableSortField(table.sortField || '');
+                        setTableSortOrder(table.sortOrder || 'none');
+                        setTableMaxRecords(table.maxRecords || 0);
                         setEditingTableId(table.id);
                         setShowLoadTableModal(false);
                       }}
@@ -3375,7 +3585,11 @@ export default function BottomPanel({
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="text-white font-medium">{table.name}</div>
-                          <div className="text-xs text-gray-500">{table.columns.length} columns</div>
+                          <div className="text-xs text-gray-500">
+                            {table.columns.length} columns
+                            {table.sortField && ` • Sorted by ${table.sortField} ${table.sortOrder === 'asc' ? '↑' : '↓'}`}
+                            {table.maxRecords && table.maxRecords > 0 && ` • Max ${table.maxRecords}`}
+                          </div>
                         </div>
                         <button
                           onClick={(e) => {

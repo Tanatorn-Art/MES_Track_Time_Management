@@ -375,10 +375,6 @@ export default function DashboardViewPage() {
           const isApiLoading = !apiData || apiData.loading;
           // Show loading indicator for blocks with variableKey when API is loading
           const showLoading = isApiLoading && block.variableKey;
-          // Show actual data, show loading if waiting for API, fallback to content for static blocks
-          const displayValue = showLoading
-            ? ''
-            : (boundValue !== undefined ? boundValue : (block.content || ''));
 
           // Render table block
           if (block.type === 'table' && block.content === 'table') {
@@ -531,6 +527,13 @@ export default function DashboardViewPage() {
           }
 
           // Render regular block
+          // Determine what to display: boundValue (from API), label (static text), or content
+          const finalDisplayValue = showLoading
+            ? ''
+            : boundValue !== undefined
+              ? boundValue
+              : (block.label || block.content || '');
+
           return (
             <div
               key={block.id}
@@ -563,7 +566,7 @@ export default function DashboardViewPage() {
                   <div className="w-3 h-3 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div>
                 </div>
               ) : (
-                displayValue
+                finalDisplayValue
               )}
             </div>
           );

@@ -66,41 +66,11 @@
       "sourceBlockId": "comp-block-1764830525829-6u84wjntp"
     },
     {
-      "id": "block-1764830773469-pe8agwpwz",
-      "type": "table",
-      "position": {
-        "x": 473,
-        "y": 176
-      },
-      "size": {
-        "width": 900,
-        "height": 514
-      },
-      "variableKey": "{\"columns\":[{\"field\":\"id\",\"header\":\"Id\",\"width\":100,\"enabled\":true},{\"field\":\"codePrivilege\",\"header\":\"CodePrivilege\",\"width\":100,\"enabled\":true},{\"field\":\"privilegeName\",\"header\":\"PrivilegeName\",\"width\":100,\"enabled\":true},{\"field\":\"categoryId\",\"header\":\"CategoryId\",\"width\":100,\"enabled\":true},{\"field\":\"description\",\"header\":\"Description\",\"width\":100,\"enabled\":true}],\"arrayField\":\"data\",\"style\":{\"headerBg\":\"#374151\",\"headerText\":\"#ffffff\",\"rowBg\":\"#1f2937\",\"rowAltBg\":\"#111827\",\"rowText\":\"#a6a9b0\",\"borderColor\":\"#4b5563\",\"fontSize\":12,\"headerFontSize\":12,\"showBorder\":true,\"stripedRows\":true}}",
-      "label": "TESTTO",
-      "style": {
-        "backgroundColor": "#1f2937",
-        "textColor": "#a6a9b0",
-        "fontSize": 12,
-        "fontWeight": "normal",
-        "fontFamily": "Inter",
-        "textAlign": "left",
-        "borderRadius": 4,
-        "padding": 0,
-        "borderWidth": 1,
-        "borderColor": "#4b5563"
-      },
-      "content": "table",
-      "groupId": "component-1764830773469",
-      "sourceComponentId": "table-component-1764830773469",
-      "sourceBlockId": "table-1764830773469"
-    },
-    {
       "id": "block-1764830940605",
       "type": "text",
       "position": {
-        "x": 478,
-        "y": 98
+        "x": 349,
+        "y": 131
       },
       "size": {
         "width": 375,
@@ -114,12 +84,42 @@
         "fontSize": 24,
         "fontWeight": "bold",
         "fontFamily": "Arial",
-        "textAlign": "center",
+        "textAlign": "left",
         "borderRadius": 8,
         "padding": 12,
         "borderWidth": 0,
         "borderColor": "#3b82f6"
       }
+    },
+    {
+      "id": "block-1764841052214-pgloawofo",
+      "type": "table",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "size": {
+        "width": 958,
+        "height": 483
+      },
+      "variableKey": "{\"columns\":[{\"field\":\"id\",\"header\":\"Asdasd\",\"width\":100,\"enabled\":true,\"headerBgColor\":\"#3e4756\",\"headerTextColor\":\"#ffffff\"},{\"field\":\"codePrivilege\",\"header\":\"CodePrivilege\",\"width\":100,\"enabled\":true},{\"field\":\"privilegeName\",\"header\":\"PrivilegeName\",\"width\":100,\"enabled\":true,\"headerBgColor\":\"#36404e\"},{\"field\":\"categoryId\",\"header\":\"CategoryId\",\"width\":100,\"enabled\":true},{\"field\":\"description\",\"header\":\"Description\",\"width\":100,\"enabled\":true}],\"arrayField\":\"data\",\"style\":{\"headerBg\":\"#3c434e\",\"headerText\":\"#ffffff\",\"rowBg\":\"#1f2937\",\"rowAltBg\":\"#343d50\",\"rowText\":\"#ebebeb\",\"borderColor\":\"#4b5563\",\"fontSize\":12,\"headerFontSize\":12,\"showBorder\":true,\"stripedRows\":true}}",
+      "label": "TESTTO",
+      "style": {
+        "backgroundColor": "#1f2937",
+        "textColor": "#ebebeb",
+        "fontSize": 12,
+        "fontWeight": "normal",
+        "fontFamily": "Inter",
+        "textAlign": "left",
+        "borderRadius": 4,
+        "padding": 0,
+        "borderWidth": 1,
+        "borderColor": "#4b5563"
+      },
+      "content": "table",
+      "groupId": "component-1764841052214",
+      "sourceComponentId": "table-component-1764841052214",
+      "sourceBlockId": "table-1764841052214"
     }
   ],
   "apiConfig": {
@@ -136,6 +136,31 @@
     },
     {
       "id": "component-1764830773469",
+      "name": "TESTTO",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764839469411",
+      "name": "Station_2",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764839473011",
+      "name": "123Test",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764839581002",
+      "name": "TESTTO",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764840882590",
+      "name": "TESTTO",
+      "isExpanded": true
+    },
+    {
+      "id": "component-1764841052214",
       "name": "TESTTO",
       "isExpanded": true
     }

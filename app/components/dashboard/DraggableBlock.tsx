@@ -252,7 +252,14 @@ export default function DraggableBlock({
       {block.type === 'table' && block.content === 'table' && (() => {
         try {
           // Handle case where variableKey might be an object already or a JSON string
-          let tableConfig: { columns?: { field: string; header: string; width: number; enabled: boolean }[]; arrayField?: string; style?: Record<string, unknown> };
+          let tableConfig: {
+            columns?: { field: string; header: string; width: number; enabled: boolean; headerBgColor?: string; headerTextColor?: string }[];
+            arrayField?: string;
+            style?: Record<string, unknown>;
+            sortField?: string;
+            sortOrder?: 'asc' | 'desc' | 'none';
+            maxRecords?: number;
+          };
 
           if (typeof block.variableKey === 'string' && block.variableKey.startsWith('{')) {
             tableConfig = JSON.parse(block.variableKey);
@@ -271,7 +278,7 @@ export default function DraggableBlock({
             );
           }
 
-          const { columns = [], arrayField = '', style: tStyle = {} } = tableConfig;
+          const { columns = [], arrayField = '', style: tStyle = {}, sortField, sortOrder, maxRecords } = tableConfig;
 
           const tableStyle = tStyle as {
             fontSize?: number;
@@ -290,10 +297,38 @@ export default function DraggableBlock({
           let dataArray: Record<string, unknown>[] = [];
           if (apiData && showLiveData) {
             if (arrayField === '__ROOT_ARRAY__' && Array.isArray(apiData)) {
-              dataArray = apiData as unknown as Record<string, unknown>[];
+              dataArray = [...(apiData as unknown as Record<string, unknown>[])];
             } else if (arrayField && !Array.isArray(apiData) && (apiData as Record<string, unknown>)[arrayField]) {
-              dataArray = (apiData as Record<string, unknown>)[arrayField] as Record<string, unknown>[];
+              dataArray = [...((apiData as Record<string, unknown>)[arrayField] as Record<string, unknown>[])];
             }
+          }
+
+          // Apply sorting
+          if (sortField && sortOrder && sortOrder !== 'none' && dataArray.length > 0) {
+            dataArray.sort((a, b) => {
+              const aVal = a[sortField];
+              const bVal = b[sortField];
+
+              // Handle null/undefined
+              if (aVal == null && bVal == null) return 0;
+              if (aVal == null) return sortOrder === 'asc' ? 1 : -1;
+              if (bVal == null) return sortOrder === 'asc' ? -1 : 1;
+
+              // Compare values
+              let comparison = 0;
+              if (typeof aVal === 'number' && typeof bVal === 'number') {
+                comparison = aVal - bVal;
+              } else {
+                comparison = String(aVal).localeCompare(String(bVal));
+              }
+
+              return sortOrder === 'asc' ? comparison : -comparison;
+            });
+          }
+
+          // Apply max records limit
+          if (maxRecords && maxRecords > 0) {
+            dataArray = dataArray.slice(0, maxRecords);
           }
 
           // Filter enabled columns, or use all if none have enabled flag
@@ -337,13 +372,14 @@ export default function DraggableBlock({
             <div className="w-full h-full overflow-hidden">
               <table className="w-full h-full border-collapse text-left table-fixed" style={{ fontSize: scaledFontSize }}>
                 <thead>
-                  <tr style={{ backgroundColor: tableStyle.headerBg || '#374151' }}>
-                    {enabledColumns.map((col: { field: string; header: string; width: number }, idx: number) => (
+                  <tr>
+                    {enabledColumns.map((col: { field: string; header: string; width: number; headerBgColor?: string; headerTextColor?: string }, idx: number) => (
                       <th
                         key={idx}
                         className="font-medium break-words align-top"
                         style={{
-                          color: tableStyle.headerText || '#ffffff',
+                          backgroundColor: col.headerBgColor || tableStyle.headerBg || '#374151',
+                          color: col.headerTextColor || tableStyle.headerText || '#ffffff',
                           fontSize: scaledHeaderFontSize,
                           padding: scaledPadding,
                           borderWidth: tableStyle.showBorder ? 1 : 0,
@@ -368,7 +404,7 @@ export default function DraggableBlock({
                             : (tableStyle.rowBg || '#1f2937')
                         }}
                       >
-                        {enabledColumns.map((col: { field: string; header: string; width: number }, colIdx: number) => (
+                        {enabledColumns.map((col: { field: string; header: string; width: number; headerBgColor?: string; headerTextColor?: string }, colIdx: number) => (
                           <td
                             key={colIdx}
                             className="break-words align-top"
@@ -397,7 +433,7 @@ export default function DraggableBlock({
                             : (tableStyle.rowBg || '#1f2937')
                         }}
                       >
-                        {enabledColumns.map((col: { field: string; header: string; width: number }, colIdx: number) => (
+                        {enabledColumns.map((col: { field: string; header: string; width: number; headerBgColor?: string; headerTextColor?: string }, colIdx: number) => (
                           <td
                             key={colIdx}
                             className="break-words align-top"

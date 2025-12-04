@@ -1,0 +1,44 @@
+{
+  "id": "dashboard-1",
+  "name": "Vaccum",
+  "backgroundImage": "",
+  "canvasSize": {
+    "width": 1920,
+    "height": 1080
+  },
+  "blocks": [
+    {
+      "id": "block-1764830940605",
+      "type": "text",
+      "position": {
+        "x": 349,
+        "y": 131
+      },
+      "size": {
+        "width": 375,
+        "height": 59
+      },
+      "variableKey": "",
+      "label": "Vaccum",
+      "style": {
+        "backgroundColor": "transparent",
+        "textColor": "#ffffff",
+        "fontSize": 24,
+        "fontWeight": "bold",
+        "fontFamily": "Arial",
+        "textAlign": "left",
+        "borderRadius": 8,
+        "padding": 12,
+        "borderWidth": 0,
+        "borderColor": "#3b82f6"
+      }
+    }
+  ],
+  "apiConfig": {
+    "url": "http://10.35.102.64:2007/api/MesPlc/getVacuum?Plant=9774&TestTimeStart=2025-12-04%2000%3A00%3A00&TestTimeEnd=2025-12-04%2023%3A59%3A59",
+    "method": "GET",
+    "headers": {},
+    "refreshInterval": 0
+  },
+  "groups": []
+}

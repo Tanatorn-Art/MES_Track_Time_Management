@@ -4,41 +4,51 @@
   "columns": [
     {
       "field": "id",
-      "header": "Id",
+      "header": "Asdasd",
       "width": 100,
-      "enabled": true
+      "enabled": true,
+      "headerBgColor": "#8f7414",
+      "headerTextColor": "#000000"
     },
     {
       "field": "codePrivilege",
       "header": "CodePrivilege",
       "width": 100,
-      "enabled": true
+      "enabled": true,
+      "headerBgColor": "#8f7414",
+      "headerTextColor": "#000000"
     },
     {
       "field": "privilegeName",
       "header": "PrivilegeName",
       "width": 100,
-      "enabled": true
+      "enabled": true,
+      "headerBgColor": "#8f7414",
+      "headerTextColor": "#030303"
     },
     {
       "field": "categoryId",
       "header": "CategoryId",
       "width": 100,
-      "enabled": true
+      "enabled": true,
+      "headerBgColor": "#8f7414",
+      "headerTextColor": "#000000"
     },
     {
       "field": "description",
       "header": "Description",
       "width": 100,
-      "enabled": true
+      "enabled": true,
+      "headerBgColor": "#8f7414",
+      "headerTextColor": "#000000"
     }
   ],
   "style": {
-    "headerBg": "#374151",
-    "headerText": "#ffffff",
-    "rowBg": "#1f2937",
-    "rowAltBg": "#111827",
-    "rowText": "#a6a9b0",
+    "headerBg": "#3c434e",
+    "headerText": "#e3e3e3",
+    "rowBg": "#ffffff",
+    "rowAltBg": "#c1f1fb",
+    "rowText": "#000000",
     "borderColor": "#4b5563",
     "fontSize": 12,
     "headerFontSize": 12,

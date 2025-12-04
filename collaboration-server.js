@@ -149,11 +149,31 @@ wss.on('connection', (ws, req) => {
   });
 });
 
-// Start server
-server.listen(PORT, () => {
+// Start server - bind to 0.0.0.0 to allow network access
+const HOST = '0.0.0.0';
+const localIP = getLocalIP();
+
+server.listen(PORT, HOST, () => {
   console.log(`Collaboration WebSocket Server running on port ${PORT}`);
-  console.log(`WebSocket URL: ws://localhost:${PORT}?dashboard=YOUR_DASHBOARD_ID`);
+  console.log(`Local URL: ws://localhost:${PORT}?dashboard=YOUR_DASHBOARD_ID`);
+  console.log(`Network URL: ws://${localIP}:${PORT}?dashboard=YOUR_DASHBOARD_ID`);
+  console.log(`\nShare the Network URL with other users on the same network!`);
 });
+
+// Get local IP address for network access
+function getLocalIP() {
+  const { networkInterfaces } = require('os');
+  const nets = networkInterfaces();
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]) {
+      // Skip internal and non-IPv4 addresses
+      if (net.family === 'IPv4' && !net.internal) {
+        return net.address;
+      }
+    }
+  }
+  return 'localhost';
+}
 
 // Graceful shutdown
 process.on('SIGINT', () => {
