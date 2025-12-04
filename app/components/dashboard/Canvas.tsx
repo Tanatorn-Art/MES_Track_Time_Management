@@ -4,6 +4,8 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Block, Size, BlockGroup } from '../../types/dashboard';
 import DraggableBlock from './DraggableBlock';
 import { Group, Edit2, Trash2, Ungroup, Check, X } from 'lucide-react';
+import RemoteCursors, { RemoteSelectionBorder } from './RemoteCursors';
+import { RemoteUser } from '../../hooks/useCollaboration';
 
 interface SelectionBox {
   startX: number;
@@ -33,6 +35,9 @@ interface CanvasProps {
   onDeleteGroup: (groupId: string) => void;
   apiData: Record<string, unknown> | unknown[] | null;
   showLiveData?: boolean; // Toggle to show real data or variable names
+  // Collaboration props
+  remoteUsers?: RemoteUser[];
+  onCursorMove?: (x: number, y: number) => void;
 }
 
 // Helper to get value from nested object by path (supports bracket notation like data[0].field or [0].field)
@@ -82,6 +87,8 @@ export default function Canvas({
   onDeleteGroup,
   apiData,
   showLiveData = false,
+  remoteUsers = [],
+  onCursorMove,
 }: CanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -203,6 +210,12 @@ export default function Canvas({
 
   // Handle mouse move for panning or selection
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    // Broadcast cursor position for collaboration
+    if (onCursorMove && isEditMode) {
+      const coords = getCanvasCoordinates(e);
+      onCursorMove(coords.x, coords.y);
+    }
+
     if (isPanning && isSpacePressed) {
       const deltaX = e.clientX - lastMousePos.x;
       const deltaY = e.clientY - lastMousePos.y;
@@ -422,6 +435,7 @@ export default function Canvas({
               onMultiBlocksUpdate={onMultiBlocksUpdate}
               apiData={apiData}
               showLiveData={showLiveData}
+              remoteUsers={remoteUsers}
             />
           ))}
 
@@ -589,6 +603,16 @@ export default function Canvas({
           )}
         </div>
       </div>
+
+      {/* Remote Cursors - show other users' cursors */}
+      {isEditMode && remoteUsers.length > 0 && (
+        <RemoteCursors
+          users={remoteUsers}
+          scale={scale}
+          offsetX={position.x}
+          offsetY={position.y}
+        />
+      )}
 
       {/* Zoom indicator */}
       <div className="absolute bottom-4 right-4 bg-black/50 text-white px-2 py-1 rounded text-sm pointer-events-none">

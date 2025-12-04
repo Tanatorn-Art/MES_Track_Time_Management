@@ -4,7 +4,9 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Block, BlockGroup, DashboardConfig, BlockStyle, BlockType, ApiData, ComponentConfig } from '../../types/dashboard';
 import BottomPanel, { BLOCK_TEMPLATES } from './BottomPanel';
 import Canvas from './Canvas';
-import { Layers, Eye, EyeOff, Trash2, ChevronLeft, ChevronRight, Type, Hash, Tag, Gauge, BarChart3, Image, Clock, Table, Box, FolderOpen, FolderClosed, ChevronDown, ChevronRight as ChevronRightIcon, Ungroup, X, AlignLeft, AlignCenter, AlignRight, Bold, Settings2 } from 'lucide-react';
+import { useCollaboration } from '../../hooks/useCollaboration';
+import { ActiveUsersList } from './RemoteCursors';
+import { Layers, Eye, EyeOff, Trash2, ChevronLeft, ChevronRight, Type, Hash, Tag, Gauge, BarChart3, Image, Clock, Table, Box, FolderOpen, FolderClosed, ChevronDown, ChevronRight as ChevronRightIcon, Ungroup, X, AlignLeft, AlignCenter, AlignRight, Bold, Settings2, Users } from 'lucide-react';
 
 const DEFAULT_BLOCK_STYLE: BlockStyle = {
   backgroundColor: '#1e40af',
@@ -81,10 +83,36 @@ export default function DashboardDesigner() {
   const [savedProjects, setSavedProjects] = useState<{ name: string; path: string }[]>([]);
   const [showLiveData, setShowLiveData] = useState(false); // Toggle to show live data vs variable names
   const [wsConnected, setWsConnected] = useState(false);
+  const [collaborationEnabled, setCollaborationEnabled] = useState(false); // Collaboration mode toggle
 
   // Refs for WebSocket and interval
   const wsRef = useRef<WebSocket | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Handler for remote block updates (from other users)
+  const handleRemoteBlockUpdate = useCallback((block: Block) => {
+    setConfig((prev) => ({
+      ...prev,
+      blocks: prev.blocks.map((b) => (b.id === block.id ? block : b)),
+    }));
+  }, []);
+
+  // Collaboration hook
+  const collaboration = useCollaboration({
+    wsUrl: 'ws://localhost:8080',
+    enabled: collaborationEnabled && isEditMode,
+    dashboardId: config.id || 'default',
+    userName: `User_${Math.random().toString(36).substr(2, 4)}`,
+    onRemoteBlockUpdate: handleRemoteBlockUpdate,
+  });
+
+  // Broadcast block selection to other users
+  useEffect(() => {
+    if (collaborationEnabled && selectedBlockId) {
+      collaboration.broadcastSelect(selectedBlockId);
+    }
+  }, [selectedBlockId, collaborationEnabled, collaboration]);
+
 
   // Get block type icon
   const getBlockTypeIcon = (type: BlockType) => {
@@ -284,7 +312,11 @@ export default function DashboardDesigner() {
       ...prev,
       blocks: prev.blocks.map((b) => (b.id === updatedBlock.id ? updatedBlock : b)),
     }));
-  }, []);
+    // Broadcast to other users if collaboration is enabled
+    if (collaborationEnabled) {
+      collaboration.broadcastBlockMove(updatedBlock);
+    }
+  }, [collaborationEnabled, collaboration]);
 
   // Handle updating multiple blocks at once (for multi-drag)
   const handleMultiBlocksUpdate = useCallback((updatedBlocks: Block[]) => {
@@ -292,7 +324,13 @@ export default function DashboardDesigner() {
       ...prev,
       blocks: updatedBlocks,
     }));
-  }, []);
+    // Broadcast each block update to other users
+    if (collaborationEnabled) {
+      updatedBlocks.forEach((block) => {
+        collaboration.broadcastBlockMove(block);
+      });
+    }
+  }, [collaborationEnabled, collaboration]);
 
   const handleBlockDelete = useCallback((id: string) => {
     setConfig((prev) => ({
@@ -853,11 +891,44 @@ export default function DashboardDesigner() {
           onDeleteGroup={handleDeleteGroup}
           apiData={apiData.data}
           showLiveData={showLiveData}
+          remoteUsers={collaborationEnabled ? collaboration.remoteUsers : []}
+          onCursorMove={collaborationEnabled ? collaboration.broadcastCursor : undefined}
         />
 
         {/* Floating Live Data Toggle Button + Connection Status */}
         {isEditMode && (
           <div className="absolute top-2 right-2 z-30 flex items-center gap-2">
+            {/* Collaboration Toggle & Users */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCollaborationEnabled(!collaborationEnabled)}
+                className={`px-2 py-1 rounded text-xs flex items-center gap-1 transition-colors ${
+                  collaborationEnabled
+                    ? collaboration.isConnected
+                      ? 'bg-green-600 text-white'
+                      : 'bg-yellow-600 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+                title={collaborationEnabled ? 'Click to disable collaboration' : 'Click to enable collaboration'}
+              >
+                <Users size={14} />
+                {collaborationEnabled
+                  ? collaboration.isConnected
+                    ? `Live (${collaboration.remoteUsers.length + 1})`
+                    : 'Connecting...'
+                  : 'Collaborate'}
+              </button>
+
+              {/* Show active users when collaboration is enabled */}
+              {collaborationEnabled && collaboration.isConnected && collaboration.remoteUsers.length > 0 && (
+                <ActiveUsersList
+                  users={collaboration.remoteUsers}
+                  localUserName="You"
+                  localUserColor={collaboration.localUserColor}
+                />
+              )}
+            </div>
+
             {/* Connection Status */}
             {config.apiConfig.wsEnabled ? (
               <div className={`px-2 py-1 rounded text-xs flex items-center gap-1 ${

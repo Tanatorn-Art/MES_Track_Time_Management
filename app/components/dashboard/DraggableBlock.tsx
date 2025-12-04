@@ -13,6 +13,8 @@ import {
   Table,
   Box
 } from 'lucide-react';
+import { RemoteSelectionBorder, RemoteSelectionIndicator } from './RemoteCursors';
+import { RemoteUser } from '../../hooks/useCollaboration';
 
 interface DraggableBlockProps {
   block: Block;
@@ -30,6 +32,8 @@ interface DraggableBlockProps {
   // API data for table rendering
   apiData?: Record<string, unknown> | unknown[] | null;
   showLiveData?: boolean;
+  // Collaboration
+  remoteUsers?: RemoteUser[];
 }
 
 export default function DraggableBlock({
@@ -46,6 +50,7 @@ export default function DraggableBlock({
   onMultiBlocksUpdate,
   apiData,
   showLiveData = false,
+  remoteUsers = [],
 }: DraggableBlockProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
@@ -226,6 +231,14 @@ export default function DraggableBlock({
         <div className="absolute top-1 left-1 text-xs opacity-50">
           {getTypeIcon()}
         </div>
+      )}
+
+      {/* Remote user selection indicator - show who is editing this block */}
+      {isEditMode && remoteUsers.length > 0 && (
+        <>
+          <RemoteSelectionIndicator users={remoteUsers} blockId={block.id} />
+          <RemoteSelectionBorder users={remoteUsers} blockId={block.id} />
+        </>
       )}
 
       {/* Show bound variable key in edit mode */}
